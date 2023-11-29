@@ -41,10 +41,10 @@
     <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
   </PropertyGroup>
   <ItemGroup>
-     <Compile Include="Assets\Samples\XR Plugin Management\4.2.1\Example XR Management implementation\Editor\SampleStandaloneLoaderUI.cs" />
      <Compile Include="Assets\Samples\XR Plugin Management\4.2.1\Example XR Management implementation\Editor\SampleMetadata.cs" />
-     <Compile Include="Assets\Samples\XR Plugin Management\4.2.1\Example XR Management implementation\Editor\SampleSettingsEditor.cs" />
+     <Compile Include="Assets\Samples\XR Plugin Management\4.2.1\Example XR Management implementation\Editor\SampleStandaloneLoaderUI.cs" />
      <Compile Include="Assets\Samples\XR Plugin Management\4.2.1\Example XR Management implementation\Editor\SampleBuildProcessor.cs" />
+     <Compile Include="Assets\Samples\XR Plugin Management\4.2.1\Example XR Management implementation\Editor\SampleSettingsEditor.cs" />
      <None Include="Assets\Samples\XR Plugin Management\4.2.1\Example XR Management implementation\Editor\Unity.XR.Management.Samples.Editor.asmdef" />
      <Reference Include="UnityEngine">
      <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.0f1\Editor\Data\Managed\UnityEngine\UnityEngine.dll</HintPath>
@@ -304,6 +304,15 @@
      <Reference Include="UnityEditor.WindowsStandalone.Extensions">
      <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.0f1\Editor\Data\PlaybackEngines\WindowsStandaloneSupport\UnityEditor.WindowsStandalone.Extensions.dll</HintPath>
      </Reference>
+     <Reference Include="Unity.VisualScripting.IonicZip">
+     <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\PackageCache\com.unity.visualscripting@1.7.6\Editor\VisualScripting.Core\Dependencies\DotNetZip\Unity.VisualScripting.IonicZip.dll</HintPath>
+     </Reference>
+     <Reference Include="log4netPlastic">
+     <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\PackageCache\com.unity.collab-proxy@1.15.15\Lib\Editor\PlasticSCM\log4netPlastic.dll</HintPath>
+     </Reference>
+     <Reference Include="ReportGeneratorMerged">
+     <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\PackageCache\com.unity.testtools.codecoverage@1.0.1\lib\ReportGenerator\ReportGeneratorMerged.dll</HintPath>
+     </Reference>
      <Reference Include="Unity.Plastic.Newtonsoft.Json">
      <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\PackageCache\com.unity.collab-proxy@1.15.15\Lib\Editor\PlasticSCM\Unity.Plastic.Newtonsoft.Json.dll</HintPath>
      </Reference>
@@ -315,15 +324,6 @@
      </Reference>
      <Reference Include="unityplastic">
      <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\PackageCache\com.unity.collab-proxy@1.15.15\Lib\Editor\PlasticSCM\unityplastic.dll</HintPath>
-     </Reference>
-     <Reference Include="Unity.VisualScripting.IonicZip">
-     <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\PackageCache\com.unity.visualscripting@1.7.6\Editor\VisualScripting.Core\Dependencies\DotNetZip\Unity.VisualScripting.IonicZip.dll</HintPath>
-     </Reference>
-     <Reference Include="log4netPlastic">
-     <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\PackageCache\com.unity.collab-proxy@1.15.15\Lib\Editor\PlasticSCM\log4netPlastic.dll</HintPath>
-     </Reference>
-     <Reference Include="ReportGeneratorMerged">
-     <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\PackageCache\com.unity.testtools.codecoverage@1.0.1\lib\ReportGenerator\ReportGeneratorMerged.dll</HintPath>
      </Reference>
      <Reference Include="Unity.VisualScripting.Antlr3.Runtime">
      <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\PackageCache\com.unity.visualscripting@1.7.6\Runtime\VisualScripting.Flow\Dependencies\NCalc\Unity.VisualScripting.Antlr3.Runtime.dll</HintPath>

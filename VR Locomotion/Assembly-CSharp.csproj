@@ -751,6 +751,9 @@
      <Reference Include="Unity.XR.OpenXR">
      <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\ScriptAssemblies\Unity.XR.OpenXR.dll</HintPath>
      </Reference>
+     <Reference Include="Unity.XR.Oculus.Editor">
+     <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\ScriptAssemblies\Unity.XR.Oculus.Editor.dll</HintPath>
+     </Reference>
      <Reference Include="UnityEditor.SpatialTracking">
      <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\ScriptAssemblies\UnityEditor.SpatialTracking.dll</HintPath>
      </Reference>
@@ -760,24 +763,17 @@
      <Reference Include="Unity.XR.OpenXR.Features.ConformanceAutomation">
      <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\ScriptAssemblies\Unity.XR.OpenXR.Features.ConformanceAutomation.dll</HintPath>
      </Reference>
+     <Reference Include="Unity.XR.Oculus">
+     <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\ScriptAssemblies\Unity.XR.Oculus.dll</HintPath>
+     </Reference>
      <Reference Include="Unity.XR.OpenXR.Features.RuntimeDebugger.Editor">
      <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\ScriptAssemblies\Unity.XR.OpenXR.Features.RuntimeDebugger.Editor.dll</HintPath>
      </Reference>
      <Reference Include="Unity.VisualScripting.State">
      <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\ScriptAssemblies\Unity.VisualScripting.State.dll</HintPath>
      </Reference>
-     <Reference Include="Unity.XR.Oculus.Editor">
-     <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\ScriptAssemblies\Unity.XR.Oculus.Editor.dll</HintPath>
-     </Reference>
-     <Reference Include="Unity.XR.Oculus">
-     <HintPath>C:\Projects\VR-Locomotion\VR Locomotion\Library\ScriptAssemblies\Unity.XR.Oculus.dll</HintPath>
-     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Unity.XR.Management.Samples.csproj">
-      <Project>{d58669ff-87e0-aea5-6c7f-826a0d027f39}</Project>
-      <Name>Unity.XR.Management.Samples</Name>
-    </ProjectReference>
     <ProjectReference Include="Unity.XR.Management.Samples.Editor.csproj">
       <Project>{4dc7b6ab-19dc-e9c6-6d91-472872514571}</Project>
       <Name>Unity.XR.Management.Samples.Editor</Name>
@@ -785,6 +781,10 @@
     <ProjectReference Include="ControllerSample.csproj">
       <Project>{83841289-0acc-c05b-37f5-e563fc2b3113}</Project>
       <Name>ControllerSample</Name>
+    </ProjectReference>
+    <ProjectReference Include="Unity.XR.Management.Samples.csproj">
+      <Project>{d58669ff-87e0-aea5-6c7f-826a0d027f39}</Project>
+      <Name>Unity.XR.Management.Samples</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
