@@ -64,51 +64,8 @@ public class Controller : MonoBehaviour
         handle_gravity();
 
         is_climbing = false;
-        
-        //MOVEMENT
-        //--------------------------------------------------------------------------------------------------------------
 
-        if(move_vec.sqrMagnitude< 0.01f) return;
-
-        var move_dist_left = Time.deltaTime * moveSpeed;
-        var current_move_vec = move_vec;
-        var current_surface_normal = surface_normal;
-        var is_avoiding_obstacle = false;
-        var iterations = 0;
-        var total_moved = 0f;
-        var move_dot_mult = 1f;
-        while (move_dist_left>Mathf.Epsilon && iterations<5)
-        {
-            if (is_avoiding_obstacle)
-                iterations += 1;
-            else
-            {
-                total_moved = 0;
-                iterations = 0;
-            }
-
-            var can_move = check_movement(is_avoiding_obstacle, move_vec, current_move_vec, current_surface_normal, move_dist_left, out var new_move_vec, out var move_dist, out var new_surface_normal, out var will_avoid_obstacle, out var obstacle_dot);
-            
-            if(!can_move) break;
-
-            if(iterations == 2 && total_moved < Mathf.Epsilon) break;
-            
-            Debug.Log("DOT: " + obstacle_dot + "   MOVE: " + move_dist);
-            
-            transform_local.position += move_dist * current_move_vec * move_dot_mult;
-            move_dot_mult = obstacle_dot;
-            current_surface_normal = new_surface_normal;
-            current_move_vec = new_move_vec;
-            move_dist_left -= move_dist;
-            is_avoiding_obstacle = will_avoid_obstacle;
-            
-            if (is_avoiding_obstacle)
-                total_moved += move_dist;
-        }
-        
-        //Debug.Log("Iterations: " + iterations);
-
-        //--------------------------------------------------------------------------------------------------------------
+        handle_movement();
     }
 
 
@@ -206,9 +163,55 @@ public class Controller : MonoBehaviour
         
         //--------------------------------------------------------------------------------------------------------------
     }
+
+
+    void handle_movement()
+    {
+        //MOVEMENT
+        //--------------------------------------------------------------------------------------------------------------
+
+        if(move_vec.sqrMagnitude< 0.01f) return;
+
+        var move_dist_left = Time.deltaTime * moveSpeed;
+        var current_move_vec = move_vec;
+        var current_surface_normal = surface_normal;
+        var is_avoiding_obstacle = false;
+        var iterations = 0;
+        var total_moved = 0f;
+        var move_dot_mult = 1f;
+        while (move_dist_left>Mathf.Epsilon && iterations<5)
+        {
+            if (is_avoiding_obstacle)
+                iterations += 1;
+            else
+            {
+                total_moved = 0;
+                iterations = 0;
+            }
+
+            var can_move = check_movement(move_vec, current_move_vec, current_surface_normal, move_dist_left, out var new_move_vec, out var move_dist, out var new_surface_normal, out var will_avoid_obstacle, out var obstacle_dot);
+            
+            if(!can_move) break;
+
+            if(iterations == 2 && total_moved < Mathf.Epsilon) break;
+            
+            Debug.Log("DOT: " + obstacle_dot + "   MOVE: " + move_dist);
+            
+            transform_local.position += move_dist * move_dot_mult * current_move_vec;
+            move_dot_mult = obstacle_dot;
+            current_surface_normal = new_surface_normal;
+            current_move_vec = new_move_vec;
+            move_dist_left -= move_dist;
+            is_avoiding_obstacle = will_avoid_obstacle;
+            
+            if (is_avoiding_obstacle)
+                total_moved += move_dist;
+        }
+
+        //--------------------------------------------------------------------------------------------------------------
+    }
     
-    
-    bool check_movement(bool is_obstacle_avoidance, Vector3 initial_move_vec, Vector3 current_move_vec, Vector3 surface_normal, float left_move_dist, out Vector3 new_move_vec, out float move_dist, out Vector3 new_surface_normal, out bool will_avoid_obstacle, out float obstacle_dot)
+    bool check_movement(Vector3 initial_move_vec, Vector3 current_move_vec, Vector3 surface_normal, float left_move_dist, out Vector3 new_move_vec, out float move_dist, out Vector3 new_surface_normal, out bool will_avoid_obstacle, out float obstacle_dot)
     {
         new_move_vec = current_move_vec;
         move_dist = left_move_dist;
@@ -237,28 +240,21 @@ public class Controller : MonoBehaviour
         
         if (is_obstacle)
         {
-            //Debug.Log("Obstacle  " + current_move_vec);
-            //Debug.DrawRay(hit_move.point, Vector3.up, Color.magenta);
-            
             var obstacle_move_sign = Mathf.Sign(Vector3.Dot(hit_norm, move_vec_right));
             var obstacle_move_vec = Vector3.Cross(hit_norm, surface_normal).normalized * obstacle_move_sign;
-            //var obstacle_move_vec = Vector3.Cross(hit_norm, Vector3.up).normalized * obstacle_move_sign;
 
             Debug.Log(hit_norm);
             Debug.DrawRay(hit_move.point, hit_norm * 10, Color.magenta);
             
             var dot = Vector3.Dot(obstacle_move_vec, initial_move_vec);
             obstacle_dot = dot;
-            
-            //Debug.Log("DOT: " + obstacle_dot);
-            
+
             if (dot <= 0) return false;
             
             will_avoid_obstacle = true;
 
             new_move_vec = obstacle_move_vec;
             
-            //if (hit_dist - 0.02f <= 0.01f)
             if (hit_dist <= moveCastBackStepDistance + obstacleSeparationDistance)
             {
                 move_dist = 0;
@@ -272,8 +268,6 @@ public class Controller : MonoBehaviour
             var v = Vector3.ProjectOnPlane(new_surface_normal, move_vec_right).normalized;
 
             new_move_vec = Vector3.ProjectOnPlane(current_move_vec, v).normalized;
-            
-            //Debug.DrawRay(current_position, new_move_vec, Color.red);
         }
         
         move_dist = hit_dist - (moveCastBackStepDistance + obstacleSeparationDistance);
@@ -289,23 +283,14 @@ public class Controller : MonoBehaviour
                 collider_radius,
                 current_move_vec,
                 out var hit_step);
-            
-            
-            //Debug.DrawRay(hit_step.point, hit_step.normal * 10, Color.green);
-            Debug.DrawRay(hit_step.point, (current_move_vec * (hit_step.distance - moveCastBackStepDistance) + Vector3.up * maxStepHeight).normalized * -10, Color.green);
-            //Debug.DrawRay(hit_step.point, (current_move_vec * (hit_step.distance - (moveCastBackStepDistance + obstacleSeparationDistance)) + Vector3.up * maxStepHeight).normalized, Color.green);
-            //Debug.Log(Vector3.Dot(Vector3.up,(current_move_vec * (hit_step.distance - (moveCastBackStepDistance + obstacleSeparationDistance)) + Vector3.up * maxStepHeight).normalized));
 
-            //Debug.Log(Vector3.Dot(Vector3.up, hit_step.normal));
-            //Debug.Log(hit_step.normal);
-            
             if (!step_hit_check
                 //|| hit_step.distance >= minStepDepth + moveCastBackStepDistance + obstacleSeparationDistance //Time.deltaTime * left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance 
                 || Vector3.Dot(Vector3.up, hit_step.normal) >= climb_angle_dot
                 || Vector3.Dot(Vector3.up, (current_move_vec * (hit_step.distance - (moveCastBackStepDistance + obstacleSeparationDistance)) + Vector3.up * maxStepHeight).normalized) <= climb_angle_dot
                 //|| Vector3.Dot(Vector3.up, (current_move_vec * (hit_step.distance - moveCastBackStepDistance) + Vector3.up * maxStepHeight).normalized) <= climb_angle_dot
                 //|| hit_step.distance>=Time.deltaTime * left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance && Vector3.Dot(Vector3.up, hit_step.normal) >= climb_angle_dot
-                )
+               )
             {
                 is_climbing = true;
                 return true;
