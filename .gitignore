@@ -9,3 +9,7 @@ VR Locomotion/ProjectSettings/RiderScriptEditorPersistedState.asset
 VR Locomotion/Unity.XR.Management.Samples.csproj
 VR Locomotion/Unity.XR.Management.Samples.Editor.csproj
 VR Locomotion/UserSettings/Layouts/default-2021.dwlt
+VR Locomotion/Assembly-CSharp.csproj
+*.csproj
+VR Locomotion/ProjectSettings/RiderScriptEditorPersistedState.asset
+*.dwlt
