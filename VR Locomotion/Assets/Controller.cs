@@ -97,9 +97,9 @@ public class Controller : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
-        delta_time = Time.deltaTime;
+        delta_time = Time.fixedDeltaTime;
         move_vec = vec_zero;
         
         ground_height_check_val = collider_height - collider_radius_x2;
@@ -119,7 +119,8 @@ public class Controller : MonoBehaviour
         if(move_vec.sqrMagnitude > 0.01f)
             move_vec.Normalize();
         
-        handle_jump();
+        
+        //handle_jump();
 
         handle_movement();
         
@@ -165,7 +166,7 @@ public class Controller : MonoBehaviour
             out var hit_ground,
             raycastMask);
 
-        var ground_check = ground_collision_check && hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance + 0.01f;// - 0.02f;// || is_climbing;
+        var ground_check = ground_collision_check && hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance + 0.001f;// - 0.02f;// || is_climbing;
 
         //On the ground
         if (ground_check && !is_jumping)
@@ -177,14 +178,21 @@ public class Controller : MonoBehaviour
                 //transform_local.position = Vector3.Lerp(transform_local.position, transform_local.position + vec_down * (hit_ground.distance - (ground_height_check_val + obstacleSeparationDistance)), 5f * delta_time);
             //}
 
+            
+            if (hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance + 0.0f)
+            {
+                transform_local.position += vec_down * (hit_ground.distance - (ground_height_check_val + obstacleSeparationDistance + 0.0f));
+                //transform_local.position = Vector3.Lerp(transform_local.position, transform_local.position + vec_down * (hit_ground.distance - (ground_height_check_val + obstacleSeparationDistance)), Mathf.Min(1f,20f * delta_time));
+            }
+            
             if (!is_grounded)
             {
-                if(hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance)
-                    transform_local.position += vec_down * (hit_ground.distance - (ground_height_check_val + obstacleSeparationDistance));
+                //if(hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance)
+                //    transform_local.position += vec_down * (hit_ground.distance - (ground_height_check_val + obstacleSeparationDistance));
                 
                 slide_speed_vector = Vector3.Project(vec_down * fall_speed, slide_vector);
 
-                fall_speed = delta_time * gravity;
+                fall_speed = 0;//delta_time * gravity;
                 is_grounded = true;
             }
 
@@ -229,6 +237,8 @@ public class Controller : MonoBehaviour
         //In the air
         else
         {
+            Debug.Log("AIR   "+ fall_speed);
+            
             if (is_climbing)
             {
                 fall_speed = 0;
@@ -402,8 +412,6 @@ public class Controller : MonoBehaviour
         will_avoid_obstacle = false;
         obstacle_dot = 1;
         
-        
-        
         var current_move_vec_flat = new Vector3(current_move_vec.x, 0, current_move_vec.z).normalized;
 
         var up_surface_dot = Vector3.Dot(vec_up, surface_normal);
@@ -423,12 +431,19 @@ public class Controller : MonoBehaviour
             out var hit_move,
             raycastMask);
 
-        var hit_dist = hit_move.distance;
- 
-        if ((!move_hit_check || hit_dist > left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance)) return true;
+        var move_ceiling_check = Physics.SphereCast(current_position + (collider_height - collider_radius_x2) * 0.5f * vec_up + moveCastBackStepDistance * vec_down, collider_radius, vec_up, out var hit_ceiling);
+
+        var ceiling_check = Vector3.Dot(vec_up, current_iter_move_vec)<0 || (!move_ceiling_check || hit_ceiling.distance > moveCastBackStepDistance + obstacleSeparationDistance * 2);
+        var move_check = (!move_hit_check || hit_move.distance > left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance);
+        
+        var hit_dist = !ceiling_check ? hit_ceiling.distance : hit_move.distance;
+        
+        if (ceiling_check
+            && move_check) return true;
         //if ((iter_num > 1 || Vector3.Dot(vec_up, surface_normal) >= climb_angle_dot) && (!move_hit_check || hit_dist > left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance)) return true;
 
-        var hit_norm = move_hit_check ? hit_move.normal : surface_normal;
+        var hit_norm = !move_check ? hit_move.normal : surface_normal;
+        hit_norm = !ceiling_check ? hit_ceiling.normal : hit_norm;
 
         var move_vec_right = Vector3.Cross(vec_up, current_move_vec);//.normalized;//
 
