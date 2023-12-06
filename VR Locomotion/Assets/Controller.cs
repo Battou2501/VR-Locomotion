@@ -98,11 +98,13 @@ public class Controller : MonoBehaviour
     }
 
     // Update is called once per frame
-    void FixedUpdate()
+    void Update()
+    //void FixedUpdate()
     {
         Physics.SyncTransforms();
         
-        delta_time = Time.fixedDeltaTime;
+        delta_time = Time.deltaTime;
+        //delta_time = Time.fixedDeltaTime;
         move_vec = vec_zero;
         
         ground_height_check_val = collider_height - collider_radius_x2;
@@ -122,9 +124,12 @@ public class Controller : MonoBehaviour
         if(Keyboard.current.eKey.isPressed)
             move_vec += vec_right+vec_forward;
         
+        if(Keyboard.current.qKey.isPressed)
+            move_vec += vec_left+vec_forward;
+        
         if(move_vec.sqrMagnitude > 0.01f)
             move_vec.Normalize();
-
+        
         current_position = transform_local.position;
         
         var capsule_point_offset = (collider_height - collider_radius_x2) * 0.5f * vec_up;
@@ -136,9 +141,15 @@ public class Controller : MonoBehaviour
 
         handle_movement();
         
-        handle_slide();
-        
+        capsule_top_point = current_position + capsule_point_offset;
+        capsule_bottom_point = current_position - capsule_point_offset;
+
         handle_gravity();
+        
+        capsule_top_point = current_position + capsule_point_offset;
+        capsule_bottom_point = current_position - capsule_point_offset;
+
+        handle_slide();
 
         transform_local.position = current_position;
         
@@ -155,6 +166,7 @@ public class Controller : MonoBehaviour
             collider_radius,
             vec_up,
             out var hit_jump,
+            4,
             raycastMask);
                 
         var jump_check = head_collision_check && hit_jump.distance <= ground_height_check_val + obstacleSeparationDistance + 0.05f;
@@ -172,42 +184,30 @@ public class Controller : MonoBehaviour
         //--------------------------------------------------------------------------------------------------------------
 
         surface_normal = vec_up;
-        
+
         var ground_collision_check = Physics.SphereCast(
             capsule_top_point,
-            collider_radius,// + 0.02f,
+            collider_radius,
             vec_down,
-            out var hit_ground,
-            raycastMask);
+            out var hit_ground, 10, raycastMask);
 
-        var ground_check = ground_collision_check && hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance + 0.001f;// - 0.02f;// || is_climbing;
+            var ground_check = ground_collision_check && hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance + 0.001f;
 
         //On the ground
         if (ground_check && !is_jumping)
         {
             slide_vector = Vector3.ProjectOnPlane(vec_down, hit_ground.normal).normalized;
 
-            //if (!is_climbing)
-            //{
-                //transform_local.position = Vector3.Lerp(transform_local.position, transform_local.position + vec_down * (hit_ground.distance - (ground_height_check_val + obstacleSeparationDistance)), 5f * delta_time);
-            //}
-
-            
             if (hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance)
             {
-                //transform_local.position += vec_down * (hit_ground.distance - (ground_height_check_val + obstacleSeparationDistance + 0.0f));
                 current_position += vec_down * (hit_ground.distance - (ground_height_check_val + obstacleSeparationDistance));
-                //transform_local.position = Vector3.Lerp(transform_local.position, transform_local.position + vec_down * (hit_ground.distance - (ground_height_check_val + obstacleSeparationDistance)), Mathf.Min(1f,20f * delta_time));
             }
             
             if (!is_grounded)
             {
-                //if(hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance)
-                //    transform_local.position += vec_down * (hit_ground.distance - (ground_height_check_val + obstacleSeparationDistance));
-                
                 slide_speed_vector = Vector3.Project(vec_down * fall_speed, slide_vector);
 
-                fall_speed = 0;//delta_time * gravity;
+                fall_speed = 0;
                 is_grounded = true;
             }
 
@@ -216,55 +216,40 @@ public class Controller : MonoBehaviour
             //stand
             if (up_ground_norm_dot >= climb_angle_dot || is_climbing)
             {
-                //fall_speed = 0;
-                if (slide_speed_vector.sqrMagnitude > 0.01f)
-                {
-                    slide_speed_vector = Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDeceleration);// / Mathf.Exp(slide_speed_vector.magnitude/50));
-                    //slide_speed_vector -= Mathf.Max(0, Mathf.Min(slide_speed_vector.magnitude, delta_time * slideDeceleration / (slide_speed_vector.magnitude/20) )) * slide_speed_vector.normalized;
-                    //slide_speed_vector -= Mathf.Max(0, Mathf.Min(slide_speed_vector.magnitude, delta_time * slideDeceleration / Mathf.Exp(slide_speed_vector.magnitude/5) )) * slide_speed_vector.normalized;
-                }
-                else
-                    slide_speed_vector = vec_zero;
-                
-                surface_normal = hit_ground.normal;
+                slide_speed_vector = slide_speed_vector.sqrMagnitude > 0.01f ? Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDeceleration) : vec_zero;
             }
             //slide
             else
             {
-                //var slide_terminal_velocity = terminalVelocityFall;// * (1f-up_ground_norm_dot);
-                
-                if (!is_climbing && slide_speed_vector.sqrMagnitude < terminalVelocitySlide*terminalVelocitySlide)
+                if (!is_climbing)
                 {
-                    slide_speed_vector += Mathf.Max(0,(up_ground_norm_dot-climb_angle_dot)/(1f - climb_angle_dot)) * delta_time * gravity * slide_vector;
-                }
-                else if (!is_climbing)
-                {
-                    //slide_speed_vector -= delta_time * slideDeceleration * up_ground_norm_dot * slide_vector;
-                    slide_speed_vector -= Mathf.Min(slide_speed_vector.magnitude, delta_time * slideDeceleration) * slide_speed_vector;
+                    if (slide_speed_vector.sqrMagnitude < terminalVelocitySlide*terminalVelocitySlide)
+                    {
+                        slide_speed_vector += Mathf.Max(0,1f-up_ground_norm_dot/climb_angle_dot) * delta_time * gravity * slide_vector;
+                    }
+                    else
+                    {
+                        slide_speed_vector -= Mathf.Min(slide_speed_vector.magnitude, delta_time * slideDeceleration) * slide_speed_vector;
+                    }
                 }
                 else
                 {
                     slide_speed_vector = vec_zero;
                 }
-                
-                surface_normal = hit_ground.normal;
             }
+            surface_normal = hit_ground.normal;
         }
         //In the air
         else
         {
-            //Debug.Log("AIR   "+ fall_speed);
-            
             if (is_climbing)
             {
                 fall_speed = 0;
-                //fall_speed = gravity;
                 return;
             }
 
             if (is_grounded)
             {
-                //fall_speed = -Math.Min(0,slide_speed_vector.y);
                 is_grounded = false;
             }
 
@@ -278,6 +263,7 @@ public class Controller : MonoBehaviour
                     collider_radius,
                     vec_up,
                     out var hit_jump,
+                    4,
                     raycastMask);
                 
                 var jump_check = head_collision_check && hit_jump.distance <= ground_height_check_val + obstacleSeparationDistance + 0.01f;
@@ -289,17 +275,13 @@ public class Controller : MonoBehaviour
                 }
             }
 
-            var touch_ground = hit_ground.distance - ground_height_check_val - obstacleSeparationDistance < delta_time * fall_speed;
+            var touch_ground = ground_collision_check && hit_ground.distance - ground_height_check_val - obstacleSeparationDistance < delta_time * fall_speed;
             
             if(!touch_ground && fall_speed < terminalVelocityFall)
                 fall_speed += delta_time * gravity;
 
-            //transform_local.position += (!ground_collision_check ? delta_time * fall_speed :  Mathf.Min(hit_ground.distance-ground_height_check_val - obstacleSeparationDistance, delta_time * fall_speed)) * vec_down;
-            current_position += (!ground_collision_check ? delta_time * fall_speed :  Mathf.Min(hit_ground.distance-ground_height_check_val - obstacleSeparationDistance, delta_time * fall_speed)) * vec_down;
+            current_position += (!ground_collision_check ? delta_time * fall_speed :  Mathf.Min(hit_ground.distance - ground_height_check_val - obstacleSeparationDistance, delta_time * fall_speed)) * vec_down;
 
-            //if (touch_ground)
-            //    fall_speed = 0;
-            
             slide_speed_vector = Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * 1f);
             if (slide_speed_vector.sqrMagnitude < 0.01f)
                 slide_speed_vector = vec_zero;
@@ -327,10 +309,9 @@ public class Controller : MonoBehaviour
         var is_avoiding_obstacle = false;
         var iterations = 0;
         var avoid_iterations = 0;
-        //var total_moved = 0f;
         var move_dot_mult = 1f;
         
-        while (move_dist_left>Mathf.Epsilon && iterations<5)
+        for(var i=0;i<5;i++)
         {
             iterations += 1;
             
@@ -338,30 +319,27 @@ public class Controller : MonoBehaviour
                 avoid_iterations += 1;
             else
             {
-                //total_moved = 0;
                 avoid_iterations = 0;
             }
 
             var can_move = check_movement2(move_vec, current_move_vec, current_surface_normal, move_dist_left, out var new_move_vec, out var move_dist, out var new_surface_normal, out var will_avoid_obstacle, out var obstacle_dot);
             
+            
             current_position += move_dist * move_dot_mult * current_move_vec;
             
             if(!can_move)
             {
-                slide_speed_vector = slide_speed_vector.normalized * 100; 
+                slide_speed_vector = vec_zero;
                 break;
             }
-
-            //transform_local.position += move_dist * move_dot_mult * current_move_vec;
-            //current_position += move_dist * move_dot_mult * current_move_vec;
+            
             move_dot_mult = obstacle_dot;
             current_surface_normal = new_surface_normal;
             current_move_vec = new_move_vec;
             move_dist_left -= move_dist;
             is_avoiding_obstacle = will_avoid_obstacle;
             
-            //if (is_avoiding_obstacle)
-            //    total_moved += move_dist;
+            if(move_dist_left<=Mathf.Epsilon) break;
 
             if (avoid_iterations <= 1 || !(move_dist < Mathf.Epsilon)) continue;
             
@@ -370,7 +348,6 @@ public class Controller : MonoBehaviour
         }
 
         slide_speed_vector = current_move_vec * slide_magnitude;
-        //slide_speed_vector = Vector3.Project(slide_speed_vector,current_move_vec);
     }
 
     void handle_movement()
@@ -382,9 +359,9 @@ public class Controller : MonoBehaviour
 
         is_climbing = false;
         
-        var v_right = Vector3.Cross(vec_up, move_vec);//.normalized;//
+        var v_right = Vector3.Cross(vec_up, move_vec);
             
-        var v = Vector3.ProjectOnPlane(surface_normal, v_right);//.normalized;//
+        var v = Vector3.ProjectOnPlane(surface_normal, v_right);
             
         move_vec = Vector3.ProjectOnPlane(move_vec, v).normalized;
         
@@ -394,10 +371,9 @@ public class Controller : MonoBehaviour
         var is_avoiding_obstacle = false;
         var iterations = 0;
         var iterations_obstacle = 0;
-        //var total_moved = 0f;
         var move_dot_mult = 1f;
         
-        while (move_dist_left>Mathf.Epsilon && iterations<5)
+        for(var i=0;i<5;i++)
         {
             iterations += 1;
             
@@ -405,15 +381,12 @@ public class Controller : MonoBehaviour
                 iterations_obstacle += 1;
             else
             {
-                //total_moved = 0;
                 iterations_obstacle = 0;
             }
-
+        
             var can_move = check_movement(iterations,move_vec, current_move_vec, current_surface_normal, move_dist_left, out var new_move_vec, out var move_dist, out var new_surface_normal, out var will_avoid_obstacle, out var obstacle_dot);
-            
-            
-            //transform_local.position += move_dist * move_dot_mult * current_move_vec;
-            current_position += move_dist * move_dot_mult * current_move_vec;
+
+            current_position += move_dist * move_dot_mult * current_move_vec * (1f - Mathf.Clamp01(Vector3.Dot(slide_speed_vector, current_move_vec)));
             
             if(!can_move) break;
             
@@ -423,8 +396,7 @@ public class Controller : MonoBehaviour
             move_dist_left -= move_dist;
             is_avoiding_obstacle = will_avoid_obstacle;
             
-            //if (is_avoiding_obstacle)
-            //    total_moved += move_dist;
+            if(move_dist_left<=Mathf.Epsilon) break;
             
             if(iterations_obstacle > 1 && move_dist <= Mathf.Epsilon) break;
         }
@@ -441,14 +413,11 @@ public class Controller : MonoBehaviour
         obstacle_dot = 1;
         
         var current_move_vec_flat = new Vector3(current_move_vec.x, 0, current_move_vec.z).normalized;
-
-        var up_surface_dot = Vector3.Dot(vec_up, current_surface_normal);
         
-        var current_iter_move_vec = iter_num > 1 || up_surface_dot < 0? current_move_vec : current_move_vec_flat;
+        var move_surface_dot = Vector3.Dot(current_move_vec_flat, current_surface_normal);
         
-        //current_position = transform_local.position;
-        //var capsule_points_offset1 = -(collider_height - collider_radius_x2) * 0.5f * vec_up - moveCastBackStepDistance * current_iter_move_vec;
-        //var capsule_points_offset2 = (collider_height - collider_radius_x2) * 0.5f * vec_up - moveCastBackStepDistance * current_iter_move_vec;
+        var current_iter_move_vec = iter_num > 1 || move_surface_dot >= 0? current_move_vec : current_move_vec_flat;
+        
         var move_back_offset = -moveCastBackStepDistance * current_iter_move_vec;
         
         var move_hit_check = Physics.CapsuleCast(
@@ -457,24 +426,25 @@ public class Controller : MonoBehaviour
             collider_radius,
             current_iter_move_vec,
             out var hit_move,
+            2,
             raycastMask);
 
         var move_ceiling_check = Physics.SphereCast(capsule_top_point + moveCastBackStepDistance * vec_down + move_dist * current_move_vec_flat, collider_radius, vec_up, out var hit_ceiling);
 
         var ceiling_check = Vector3.Dot(vec_up, current_move_vec)<=0 || (!move_ceiling_check || hit_ceiling.distance > moveCastBackStepDistance + obstacleSeparationDistance * 2);
         var move_check = (!move_hit_check || hit_move.distance > left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance);
-        
+
         var hit_dist = hit_move.distance;
-        
+
         if (ceiling_check && move_check) return true;
 
         var hit_norm = !move_check ? hit_move.normal : current_surface_normal;
         hit_norm = !ceiling_check ? hit_ceiling.normal : hit_norm;
-
+        
         hit_dist = !ceiling_check ? 0 : hit_dist;
         
-        var move_vec_right = Vector3.Cross(vec_up, current_move_vec);//.normalized;//
-
+        var move_vec_right = Vector3.Cross(vec_up, current_move_vec);
+        
         var move_hit_dot = Vector3.Dot(vec_up, hit_norm);
         
         var is_obstacle = move_hit_dot<0 || move_hit_dot < climb_angle_dot && !step_check2();// || head_check ;
@@ -489,10 +459,10 @@ public class Controller : MonoBehaviour
             }
             
             var obstacle_move_vec = obstacle_move_sign * Vector3.Cross(hit_norm, current_surface_normal).normalized;
-
+        
             var dot = Vector3.Dot(obstacle_move_vec, initial_move_vec);
             obstacle_dot = dot;
-
+        
             if (dot <= 0)
             {
                 move_dist = !ceiling_check ? 0 : hit_move.distance - moveCastBackStepDistance - obstacleSeparationDistance;
@@ -500,7 +470,7 @@ public class Controller : MonoBehaviour
             }
             
             will_avoid_obstacle = true;
-
+        
             new_move_vec = obstacle_move_vec;
             
             if (hit_dist <= moveCastBackStepDistance + obstacleSeparationDistance)
@@ -516,9 +486,9 @@ public class Controller : MonoBehaviour
             else
             {
                 new_surface_normal = hit_norm;
-
+        
                 var v = Vector3.ProjectOnPlane(new_surface_normal, move_vec_right); //.normalized;//
-
+        
                 new_move_vec = Vector3.ProjectOnPlane(current_move_vec, v).normalized;
             }
         }
@@ -533,11 +503,11 @@ public class Controller : MonoBehaviour
             {
                 return false;
             }
-
+        
             var check_center = check_step_spheres(vec_zero);
             var check_left = check_step_spheres(-move_vec_right*(collider_radius-0.05f));
             var check_right = check_step_spheres(move_vec_right*(collider_radius-0.05f));
-
+        
             if (!check_center || !check_left || !check_right) return false;
             
             is_climbing = true;
@@ -553,8 +523,9 @@ public class Controller : MonoBehaviour
                 collider_radius,
                 current_move_vec_flat,
                 out var hit_step,
+                2,
                 raycastMask);
-
+        
             return !step_hit_check || hit_step.distance - obstacleSeparationDistance - moveCastBackStepDistance > minStepDepth;
         }
         
@@ -567,11 +538,12 @@ public class Controller : MonoBehaviour
                 stepCheckSpheresRadius,
                 current_move_vec_flat,
                 out var hit_step_high,
+                2,
                 raycastMask);
-
+        
             var v1 = !step_hit_check_high;
             if (v1) return true;
-
+        
             var step_high_dist_check = hit_step_high.distance - collider_radius - moveCastBackStepDistance > minStepDepth;
             return step_high_dist_check;
         }
@@ -609,6 +581,7 @@ public class Controller : MonoBehaviour
             collider_radius,
             current_move_vec,
             out var hit_move,
+            2,
             raycastMask);
         
 

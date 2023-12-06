@@ -13,25 +13,31 @@ namespace DefaultNamespace
         public float maxSpeed;
         float speed;
         float angle;
+        float delta_time;
+        
         void OnEnable()
         {
             speed = 0;
             angle = Mathf.PI*0.5f;
         }
 
-        void FixedUpdate()
+        void Update()
+        //void FixedUpdate()
         {
+            delta_time = Time.deltaTime;
+            //delta_time = Time.fixedDeltaTime;
+            
             if (speed < maxSpeed)
-                speed += Time.deltaTime * acceleration;
+                speed += delta_time * acceleration;
 
 
-            angle += Time.fixedDeltaTime;
+            angle += delta_time;
 
             if (angle > Mathf.PI * 2)
                 angle = 0;
             
             if(move)
-                transform.position += moveVector * Time.fixedDeltaTime * speed;
+                transform.position += moveVector * delta_time * speed;
 
             if(roll)
                 transform.rotation = Quaternion.identity * Quaternion.AngleAxis(Mathf.Cos(angle)*5f, Vector3.right);
