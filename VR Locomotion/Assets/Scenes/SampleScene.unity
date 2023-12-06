@@ -8813,6 +8813,7 @@ MonoBehaviour:
   colliderRadius: 0.3
   colliderHeight: 2
   colliderMinHeight: 1
+  stepCheckSpheresRadius: 0.05
   terminalVelocityFall: 200
   terminalVelocitySlide: 50
   maxClimbAngle: 45
@@ -8845,7 +8846,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1884625076}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 56.5, y: 0.92, z: 2.741}
+  m_LocalPosition: {x: 68.83417, y: 0.8, z: -3.0661588}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

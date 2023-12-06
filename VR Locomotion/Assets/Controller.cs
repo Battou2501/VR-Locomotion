@@ -10,6 +10,7 @@ public class Controller : MonoBehaviour
     public float colliderRadius;
     public float colliderHeight;
     public float colliderMinHeight;
+    public float stepCheckSpheresRadius;
     public float terminalVelocityFall;
     public float terminalVelocitySlide;
     public float maxClimbAngle;
@@ -592,21 +593,12 @@ public class Controller : MonoBehaviour
         
         bool check_step_spheres( Vector3 offset, out RaycastHit hit, out bool is_hit)
         {
-            var step_hit_check_low = Physics.SphereCast(
-                current_position - collider_height * 0.5f * vec_up + 0.1f * vec_up + offset - moveCastBackStepDistance * 1 * current_move_vec_flat,
-                0.05f,
-                //current_move_vec,
-                current_move_vec_flat,
-                out var hit_step_low,
-                raycastMask);
-
-            hit = hit_step_low;
-            is_hit = false;
+            var high_sphere_pos = current_position - (collider_height * 0.5f - stepCheckSpheresRadius - maxStepHeight) * vec_up + offset - moveCastBackStepDistance * current_move_vec_flat;
             
             var step_hit_check_high = Physics.SphereCast(
-                current_position - collider_height * 0.5f * vec_up + (maxStepHeight + 0.05f) * vec_up + offset - moveCastBackStepDistance * 1 * current_move_vec_flat,
-                0.05f,
-                //current_move_vec,
+                //current_position - collider_height * 0.5f * vec_up + (maxStepHeight + 0.05f) * vec_up + offset - moveCastBackStepDistance * 1 * current_move_vec_flat,
+                high_sphere_pos,
+                stepCheckSpheresRadius,
                 current_move_vec_flat,
                 out var hit_step_high,
                 raycastMask);
@@ -615,11 +607,10 @@ public class Controller : MonoBehaviour
             is_hit = step_hit_check_high;
 
             var v1 = !step_hit_check_high;
-            var v2 = !step_hit_check_low && hit_step_high.distance - collider_radius - moveCastBackStepDistance * 1 > minStepDepth;
-            var v3 = Vector3.Dot(vec_up,(hit_step_high.point - hit_step_low.point).normalized) < climb_angle_dot && hit_step_high.distance - collider_radius - moveCastBackStepDistance * 1 > minStepDepth;
-            
-            //return !step_hit_check_low || !step_hit_check_high || hit_step_high.distance - collider_radius - moveCastBackStepDistance > minStepDepth;
-            return v1 || v2 || v3;
+            if (v1) return true;
+
+            var step_high_dist_check = hit_step_high.distance - collider_radius - moveCastBackStepDistance > minStepDepth;
+            return step_high_dist_check;
         }
     }
     
