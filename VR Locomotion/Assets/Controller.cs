@@ -16,7 +16,8 @@ public class Controller : MonoBehaviour
     public float maxClimbAngle;
     public float maxStepHeight;
     public float minStepDepth;
-    public float slideDeceleration;
+    public float slideDecelerationGround;
+    public float slideDecelerationTrajectoryChange;
     public float moveCastBackStepDistance;
     public float obstacleSeparationDistance;
 
@@ -191,7 +192,7 @@ public class Controller : MonoBehaviour
             vec_down,
             out var hit_ground, 10, raycastMask);
 
-            var ground_check = ground_collision_check && hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance + 0.001f;
+            var ground_check = ground_collision_check && hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance + 0.01f;
 
         //On the ground
         if (ground_check && !is_jumping)
@@ -220,7 +221,8 @@ public class Controller : MonoBehaviour
             {
                 slide_speed_vector = slide_speed_vector.sqrMagnitude > 0.01f 
                         ? 
-                        Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDeceleration) //* (1f + 10f*Mathf.Clamp01(Vector3.Dot(surface_normal, -slide_speed_vector.normalized)))) 
+                        //ЗАМЕДЛЯТЬ В ЗАВИСИМОСТИ ОТ УКЛОНА ЗЕМЛИ ОТНОСИТЕЛЬНО ВЕКТОРА СКЛЬЖЕНИЯ
+                        Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDecelerationGround) //* (1f + 10f*Mathf.Clamp01(Vector3.Dot(surface_normal, -slide_speed_vector.normalized)))) 
                         : 
                         vec_zero;
             }
@@ -232,10 +234,17 @@ public class Controller : MonoBehaviour
                     if (slide_speed_vector.sqrMagnitude < terminalVelocitySlide*terminalVelocitySlide)
                     {
                         slide_speed_vector += Mathf.Max(0,1f-up_ground_norm_dot/climb_angle_dot) * delta_time * gravity * slide_vector;
+                        
+                        //slide_speed_vector -= Mathf.Min(slide_speed_vector.magnitude, delta_time * slideDeceleration * (1f-Vector3.Dot(slide_vector, slide_speed_vector.normalized))) * slide_speed_vector.normalized;
+
+                        var mag = slide_speed_vector.magnitude;
+                        slide_speed_vector = Vector3.Lerp(slide_speed_vector.normalized, slide_vector, delta_time * slideDecelerationTrajectoryChange)*mag;// * (1f-Mathf.Clamp01(Vector3.Dot(slide_vector, slide_speed_vector.normalized)))) * mag;
+                        
                     }
                     else
                     {
-                        slide_speed_vector -= Mathf.Min(slide_speed_vector.magnitude, delta_time * slideDeceleration) * slide_speed_vector;
+                        //slide_speed_vector -= Mathf.Min(slide_speed_vector.magnitude, delta_time * slideDeceleration) * slide_speed_vector.normalized;
+                        slide_speed_vector = Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDecelerationTrajectoryChange);
                     }
                 }
                 else
@@ -287,7 +296,7 @@ public class Controller : MonoBehaviour
 
             current_position += (!ground_collision_check ? delta_time * fall_speed :  Mathf.Min(hit_ground.distance - ground_height_check_val - obstacleSeparationDistance, delta_time * fall_speed)) * vec_down;
 
-            slide_speed_vector = Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * 1f);
+            slide_speed_vector = Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDecelerationTrajectoryChange);
             if (slide_speed_vector.sqrMagnitude < 0.01f)
                 slide_speed_vector = vec_zero;
 
