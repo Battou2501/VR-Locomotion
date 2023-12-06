@@ -211,12 +211,18 @@ public class Controller : MonoBehaviour
                 is_grounded = true;
             }
 
-            var up_ground_norm_dot = Vector3.Dot(vec_up, hit_ground.normal);
+            surface_normal = hit_ground.normal;
+            
+            var up_ground_norm_dot = Vector3.Dot(vec_up, surface_normal);
             
             //stand
             if (up_ground_norm_dot >= climb_angle_dot || is_climbing)
             {
-                slide_speed_vector = slide_speed_vector.sqrMagnitude > 0.01f ? Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDeceleration) : vec_zero;
+                slide_speed_vector = slide_speed_vector.sqrMagnitude > 0.01f 
+                        ? 
+                        Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDeceleration) //* (1f + 10f*Mathf.Clamp01(Vector3.Dot(surface_normal, -slide_speed_vector.normalized)))) 
+                        : 
+                        vec_zero;
             }
             //slide
             else
@@ -237,7 +243,6 @@ public class Controller : MonoBehaviour
                     slide_speed_vector = vec_zero;
                 }
             }
-            surface_normal = hit_ground.normal;
         }
         //In the air
         else
@@ -307,13 +312,13 @@ public class Controller : MonoBehaviour
         var current_move_vec = slide_speed_vector.normalized;
         var current_surface_normal = surface_normal;
         var is_avoiding_obstacle = false;
-        var iterations = 0;
+        //var iterations = 0;
         var avoid_iterations = 0;
         var move_dot_mult = 1f;
         
         for(var i=0;i<5;i++)
         {
-            iterations += 1;
+            //iterations += 1;
             
             if (is_avoiding_obstacle)
                 avoid_iterations += 1;
@@ -325,25 +330,45 @@ public class Controller : MonoBehaviour
             var can_move = check_movement2(move_vec, current_move_vec, current_surface_normal, move_dist_left, out var new_move_vec, out var move_dist, out var new_surface_normal, out var will_avoid_obstacle, out var obstacle_dot);
             
             
-            current_position += move_dist * move_dot_mult * current_move_vec;
             
-            if(!can_move)
+            current_position += move_dist * current_move_vec;
+            
+            //if(!can_move)
+            //{
+            //    slide_speed_vector = vec_zero;
+            //    break;
+            //}
+            
+            //move_dot_mult = obstacle_dot;
+            //var move_vec_right = Vector3.Cross(vec_up, current_move_vec);
+            //var move_vec_normal = Vector3.Cross(current_move_vec, move_vec_right);
+            var current_move_vec_flat = Vector3.ProjectOnPlane(current_move_vec, vec_up).normalized;
+            move_dot_mult = Mathf.Max(0, Vector3.Dot(current_move_vec, new_move_vec)) * (Vector3.Dot(current_move_vec_flat, new_move_vec) < 0 ? 0 : 1);
+
+            if (move_dot_mult <= 0)
             {
-                slide_speed_vector = vec_zero;
+                current_move_vec = vec_zero;
+                slide_magnitude = 0;
                 break;
             }
             
-            move_dot_mult = obstacle_dot;
             current_surface_normal = new_surface_normal;
+            
             current_move_vec = new_move_vec;
+            
             move_dist_left -= move_dist;
+            move_dist_left *= move_dot_mult;
+            
+            slide_magnitude *= move_dot_mult;
+            
             is_avoiding_obstacle = will_avoid_obstacle;
             
             if(move_dist_left<=Mathf.Epsilon) break;
 
             if (avoid_iterations <= 1 || !(move_dist < Mathf.Epsilon)) continue;
             
-            slide_speed_vector = vec_zero;
+            current_move_vec = vec_zero;
+            slide_magnitude = 0;
             break;
         }
 
@@ -388,6 +413,8 @@ public class Controller : MonoBehaviour
 
             current_position += move_dist * move_dot_mult * current_move_vec * (1f - Mathf.Clamp01(Vector3.Dot(slide_speed_vector, current_move_vec)));
             
+            Debug.Log(move_dist<0);
+            
             if(!can_move) break;
             
             move_dot_mult = obstacle_dot;
@@ -431,7 +458,7 @@ public class Controller : MonoBehaviour
 
         var move_ceiling_check = Physics.SphereCast(capsule_top_point + moveCastBackStepDistance * vec_down + move_dist * current_move_vec_flat, collider_radius, vec_up, out var hit_ceiling);
 
-        var ceiling_check = Vector3.Dot(vec_up, current_move_vec)<=0 || (!move_ceiling_check || hit_ceiling.distance > moveCastBackStepDistance + obstacleSeparationDistance * 2);
+        var ceiling_check = Vector3.Dot(vec_up, current_move_vec)<=0 || (!move_ceiling_check || hit_ceiling.distance > moveCastBackStepDistance + obstacleSeparationDistance);
         var move_check = (!move_hit_check || hit_move.distance > left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance);
 
         var hit_dist = hit_move.distance;
@@ -465,7 +492,7 @@ public class Controller : MonoBehaviour
         
             if (dot <= 0)
             {
-                move_dist = !ceiling_check ? 0 : hit_move.distance - moveCastBackStepDistance - obstacleSeparationDistance;
+                move_dist = !ceiling_check ? 0 : Mathf.Max(0,hit_move.distance - moveCastBackStepDistance - obstacleSeparationDistance);
                 return false;
             }
             
@@ -487,9 +514,9 @@ public class Controller : MonoBehaviour
             {
                 new_surface_normal = hit_norm;
         
-                var v = Vector3.ProjectOnPlane(new_surface_normal, move_vec_right); //.normalized;//
+                var v = Vector3.ProjectOnPlane(new_surface_normal, move_vec_right);
         
-                new_move_vec = Vector3.ProjectOnPlane(current_move_vec, v).normalized;
+                new_move_vec = Vector3.ProjectOnPlane(current_move_vec_flat, v).normalized;
             }
         }
         
@@ -556,28 +583,12 @@ public class Controller : MonoBehaviour
         new_surface_normal = current_surface_normal;
         will_avoid_obstacle = false;
         obstacle_dot = 1;
-
-        //var current_position = transform_local.position;
-        //var capsule_points_offset1 = -(collider_height - collider_radius_x2) * 0.5f * vec_up - moveCastBackStepDistance * current_move_vec;
-        //var capsule_points_offset2 = (collider_height - collider_radius_x2) * 0.5f * vec_up - moveCastBackStepDistance * current_move_vec;
-        //
-        //var move_hit_check = Physics.CapsuleCast(
-        //    //current_position - 0.5f * Vector3.up - moveCastBackStepDistance * current_move_vec,
-        //    //current_position + 0.5f * Vector3.up - moveCastBackStepDistance * current_move_vec,
-        //    current_position + capsule_points_offset1,
-        //    current_position + capsule_points_offset2,
-        //    collider_radius,
-        //    current_move_vec,
-        //    out var hit_move,
-        //    raycastMask);
         
-        //var current_position = transform_local.position;
-        var capsule_points_offset1 = -(collider_height - collider_radius_x2) * 0.5f * vec_up - moveCastBackStepDistance * current_move_vec;
-        var capsule_points_offset2 = (collider_height - collider_radius_x2) * 0.5f * vec_up - moveCastBackStepDistance * current_move_vec;
-
+        var move_back_offset = -moveCastBackStepDistance * current_move_vec;
+        
         var move_hit_check = Physics.CapsuleCast(
-            current_position + capsule_points_offset1,
-            current_position + capsule_points_offset2,
+            capsule_bottom_point + move_back_offset,
+            capsule_top_point + move_back_offset,
             collider_radius,
             current_move_vec,
             out var hit_move,
@@ -587,63 +598,20 @@ public class Controller : MonoBehaviour
 
         var hit_dist = hit_move.distance;
 
-        //if (left_move_dist > 0.38f)
-        //{
-        //    
-        //}
-        
-        //Debug.Log(hit_dist +"   " + delta_time * left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance);
-        
-        //if (!move_hit_check || hit_dist > delta_time * left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance) return true;
         if (!move_hit_check || hit_dist > left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance) return true;
 
         var hit_norm = hit_move.normal;
 
-        //var is_obstacle = Vector3.Dot(vec_up, hit_norm) < climb_angle_dot;// && !step_check() ;
+        var move_vec_right = Vector3.Cross(vec_up, current_move_vec);
         
-        var move_vec_right = Vector3.Cross(vec_up, current_move_vec);//.normalized;//
+        new_surface_normal = hit_norm;
         
-        //DebugExtension.DebugCapsule(
-        //    current_position - Vector3.up - moveCastBackStepDistance * current_move_vec + 0.15f * current_move_vec,
-        //    current_position + Vector3.up - moveCastBackStepDistance * current_move_vec + 0.15f * current_move_vec,
-        //    Color.blue,
-        //    collider_radius);
+        var v = Vector3.ProjectOnPlane(new_surface_normal, move_vec_right);
         
-        //if (is_obstacle)
-        //{
-        //    var obstacle_move_sign = Mathf.Sign(Vector3.Dot(hit_norm, move_vec_right));
-        //    var obstacle_move_vec = obstacle_move_sign * Vector3.Cross(hit_norm, surface_normal).normalized;
-        //
-        //    //Debug.Log(hit_norm);
-        //    //Debug.DrawRay(hit_move.point, hit_norm * 10, Color.magenta);
-        //    
-        //    var dot = Vector3.Dot(obstacle_move_vec, initial_move_vec);
-        //    obstacle_dot = dot;
-        //
-        //    if (dot <= 0) return false;
-        //    
-        //    will_avoid_obstacle = true;
-        //
-        //    new_move_vec = obstacle_move_vec;
-        //    
-        //    if (hit_dist <= moveCastBackStepDistance + obstacleSeparationDistance)
-        //    {
-        //        move_dist = 0;
-        //        return true;
-        //    }
-        //}
-        //else
-        {
-            //Debug.Log("HIT");
-            new_surface_normal = hit_norm;
-
-            var v = Vector3.ProjectOnPlane(new_surface_normal, move_vec_right);//.normalized;//
-
-            new_move_vec = Vector3.ProjectOnPlane(current_move_vec, v).normalized;
-
-            //Debug.DrawRay(hit_move.point, Vector3.up, Color.red);
-            //Debug.DrawRay(hit_move.point, new_move_vec, Color.red);
-        }
+        new_move_vec = Vector3.ProjectOnPlane(current_move_vec, v).normalized;
+        
+        //new_move_vec = Vector3.Cross(move_vec_right, new_surface_normal).normalized;
+        
         
         move_dist = Mathf.Max(0, hit_dist - (moveCastBackStepDistance + obstacleSeparationDistance));
 
