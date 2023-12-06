@@ -529,82 +529,45 @@ public class Controller : MonoBehaviour
 
         bool step_check2()
         {
-            if (!check_step_capsule(out var hit_step_capsule))
+            if (!check_step_capsule())
             {
-                hit_norm = hit_step_capsule.normal;
-
                 return false;
             }
 
-            var check_center = check_step_spheres(vec_zero, out var hit_step_high, out var step_hit_check_high);
-            //var check_left = check_step_spheres(-move_vec_right*(collider_radius-0.05f + obstacleSeparationDistance), out var hit_step_high_left, out var step_hit_check_high_left);
-            var check_left = check_step_spheres(-move_vec_right*(collider_radius-0.05f), out var hit_step_high_left, out var step_hit_check_high_left);
-            //var check_right = check_step_spheres(move_vec_right*(collider_radius-0.05f + obstacleSeparationDistance), out var hit_step_high_right, out var step_hit_check_high_right);
-            var check_right = check_step_spheres(move_vec_right*(collider_radius-0.05f), out var hit_step_high_right, out var step_hit_check_high_right);
+            var check_center = check_step_spheres(vec_zero);
+            var check_left = check_step_spheres(-move_vec_right*(collider_radius-0.05f));
+            var check_right = check_step_spheres(move_vec_right*(collider_radius-0.05f));
 
-            if (check_center && check_left && check_right)
-            {
-                is_climbing = true;
-                return true;
-            }
-
-            var count = 0;
-            var h_n = vec_zero;
-
-            if (step_hit_check_high)
-            {
-                count += 1;
-                h_n += hit_step_high.normal;
-            }
-
-            if (step_hit_check_high_left)
-            {
-                count += 1;
-                h_n += hit_step_high_left.normal;
-            }
-
-            if (step_hit_check_high_right)
-            {
-                count += 1;
-                h_n += hit_step_high_right.normal;
-            }
-
-            h_n /= count;
-            hit_norm = h_n;
-
-            return false;
+            if (!check_center || !check_left || !check_right) return false;
+            
+            is_climbing = true;
+            
+            return true;
         }
 
-        bool check_step_capsule( out RaycastHit hit)
+        bool check_step_capsule()
         {
             var step_hit_check = Physics.CapsuleCast(
-                capsule_bottom_point + move_back_offset + maxStepHeight * vec_up,// + vec_up * obstacleSeparationDistance,
-                capsule_top_point + move_back_offset,// - vec_up * obstacleSeparationDistance,
-                collider_radius,//+obstacleSeparationDistance,
-                //current_move_vec,
+                capsule_bottom_point + move_back_offset + maxStepHeight * vec_up,
+                capsule_top_point + move_back_offset,
+                collider_radius,
                 current_move_vec_flat,
                 out var hit_step,
                 raycastMask);
 
-            hit = hit_step;
-            
             return !step_hit_check || hit_step.distance - obstacleSeparationDistance - moveCastBackStepDistance > minStepDepth;
         }
         
-        bool check_step_spheres( Vector3 offset, out RaycastHit hit, out bool is_hit)
+        bool check_step_spheres( Vector3 offset)
         {
             var high_sphere_pos = current_position - (collider_height * 0.5f - stepCheckSpheresRadius - maxStepHeight) * vec_up + offset - moveCastBackStepDistance * current_move_vec_flat;
             
             var step_hit_check_high = Physics.SphereCast(
-                //current_position - collider_height * 0.5f * vec_up + (maxStepHeight + 0.05f) * vec_up + offset - moveCastBackStepDistance * 1 * current_move_vec_flat,
                 high_sphere_pos,
                 stepCheckSpheresRadius,
                 current_move_vec_flat,
                 out var hit_step_high,
                 raycastMask);
-
-            hit = hit_step_high;
-            is_hit = step_hit_check_high;
 
             var v1 = !step_hit_check_high;
             if (v1) return true;
