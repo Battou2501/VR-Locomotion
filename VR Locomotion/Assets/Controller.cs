@@ -3,6 +3,11 @@ using UnityEngine.InputSystem;
 
 public class Controller : MonoBehaviour
 {
+    public enum SlideDecelTypes
+    {
+        broken_line_zero_to_one_to_N = 0,
+        curve_zero_to_4_trhough_one = 1
+    }
     
     public float gravity = 9.8f;
 
@@ -18,6 +23,8 @@ public class Controller : MonoBehaviour
     public float minStepDepth;
     public float slideDecelerationGround;
     public float slideDecelerationTrajectoryChange;
+    public SlideDecelTypes groundSlideDecelType;
+    public float maxDecelCoefForBrokenLineType;
     public float moveCastBackStepDistance;
     public float obstacleSeparationDistance;
 
@@ -154,6 +161,9 @@ public class Controller : MonoBehaviour
 
         transform_local.position = current_position;
         
+        Debug.DrawRay(current_position, slide_speed_vector.normalized*10, Color.red);
+        Debug.Log(slide_speed_vector.magnitude);
+        
         Physics.SyncTransforms();
     }
 
@@ -197,113 +207,117 @@ public class Controller : MonoBehaviour
         //On the ground
         if (ground_check && !is_jumping)
         {
+            surface_normal = hit_ground.normal;
             slide_vector = Vector3.ProjectOnPlane(vec_down, hit_ground.normal).normalized;
-
+            var up_ground_norm_dot = Vector3.Dot(vec_up, surface_normal);
+            
+            //when landed from in air state
+            if (!is_grounded)
+            {
+                slide_speed_vector = Vector3.Project(vec_down * fall_speed, slide_vector);
+                fall_speed = 0;
+                is_grounded = true;
+            }
+            
+            //fix position if clipping through ground
             if (hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance)
             {
                 current_position += vec_down * (hit_ground.distance - (ground_height_check_val + obstacleSeparationDistance));
             }
-            
-            if (!is_grounded)
-            {
-                slide_speed_vector = Vector3.Project(vec_down * fall_speed, slide_vector);
 
-                fall_speed = 0;
-                is_grounded = true;
-            }
-
-            surface_normal = hit_ground.normal;
-            
-            var up_ground_norm_dot = Vector3.Dot(vec_up, surface_normal);
-            
             //stand
             if (up_ground_norm_dot >= climb_angle_dot || is_climbing)
             {
-                slide_speed_vector = slide_speed_vector.sqrMagnitude > 0.01f 
-                        ? 
-                        //ЗАМЕДЛЯТЬ В ЗАВИСИМОСТИ ОТ УКЛОНА ЗЕМЛИ ОТНОСИТЕЛЬНО ВЕКТОРА СКЛЬЖЕНИЯ
-                        Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDecelerationGround) //* (1f + 10f*Mathf.Clamp01(Vector3.Dot(surface_normal, -slide_speed_vector.normalized)))) 
-                        : 
-                        vec_zero;
-            }
-            //slide
-            else
-            {
-                if (!is_climbing)
-                {
-                    if (slide_speed_vector.sqrMagnitude < terminalVelocitySlide*terminalVelocitySlide)
-                    {
-                        slide_speed_vector += Mathf.Max(0,1f-up_ground_norm_dot/climb_angle_dot) * delta_time * gravity * slide_vector;
-                        
-                        //slide_speed_vector -= Mathf.Min(slide_speed_vector.magnitude, delta_time * slideDeceleration * (1f-Vector3.Dot(slide_vector, slide_speed_vector.normalized))) * slide_speed_vector.normalized;
 
-                        var mag = slide_speed_vector.magnitude;
-                        slide_speed_vector = Vector3.Lerp(slide_speed_vector.normalized, slide_vector, delta_time * slideDecelerationTrajectoryChange)*mag;// * (1f-Mathf.Clamp01(Vector3.Dot(slide_vector, slide_speed_vector.normalized)))) * mag;
+                if (slide_speed_vector.sqrMagnitude > 0.01f)
+                {
+                    var slide_up_dot = Vector3.Dot(vec_up, slide_speed_vector.normalized);
+                    slide_up_dot = groundSlideDecelType == SlideDecelTypes.broken_line_zero_to_one_to_N ? slide_up_dot : (slide_up_dot * 0.5f + 0.5f) * 2f;
+                    
+                    var slide_incline_slowdown_coef = groundSlideDecelType == SlideDecelTypes.curve_zero_to_4_trhough_one
+                        ? slide_up_dot * slide_up_dot
+                        : Mathf.Max(0, slide_up_dot) * (maxDecelCoefForBrokenLineType-1f) + Mathf.Min(1, slide_up_dot + 1);
+
+                    slide_speed_vector = Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDecelerationGround * slide_incline_slowdown_coef);
+                    return;
+                }
+
+                slide_speed_vector = vec_zero;
+                
+                return;
+            }
+            
+            //slide
+            if (!is_climbing)
+            {
+                if (slide_speed_vector.sqrMagnitude < terminalVelocitySlide*terminalVelocitySlide)
+                {
+                    slide_speed_vector += Mathf.Max(0,1f-up_ground_norm_dot/climb_angle_dot) * delta_time * gravity * slide_vector;
                         
-                    }
-                    else
-                    {
-                        //slide_speed_vector -= Mathf.Min(slide_speed_vector.magnitude, delta_time * slideDeceleration) * slide_speed_vector.normalized;
-                        slide_speed_vector = Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDecelerationTrajectoryChange);
-                    }
+                    var mag = slide_speed_vector.magnitude;
+                    slide_speed_vector = Vector3.Lerp(slide_speed_vector.normalized, slide_vector, delta_time * slideDecelerationTrajectoryChange)*mag;
+                        
                 }
                 else
                 {
-                    slide_speed_vector = vec_zero;
+                    slide_speed_vector = Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDecelerationTrajectoryChange);
                 }
             }
+            else
+            {
+                slide_speed_vector = vec_zero;
+            }
+                
+            return;
         }
+        
         //In the air
-        else
+        if (is_climbing)
         {
-            if (is_climbing)
+            fall_speed = 0;
+            return;
+        }
+
+        if (is_grounded)
+        {
+            is_grounded = false;
+        }
+
+        if (!ground_check && is_jumping)
+            is_jumping = false;
+
+        if (fall_speed < 0)
+        {
+            var head_collision_check = Physics.SphereCast(
+                capsule_bottom_point,
+                collider_radius,
+                vec_up,
+                out var hit_jump,
+                4,
+                raycastMask);
+                
+            var jump_check = head_collision_check && hit_jump.distance <= ground_height_check_val + obstacleSeparationDistance + 0.01f;
+
+            if (jump_check)
             {
                 fall_speed = 0;
-                return;
-            }
-
-            if (is_grounded)
-            {
-                is_grounded = false;
-            }
-
-            if (!ground_check && is_jumping)
                 is_jumping = false;
-
-            if (fall_speed < 0)
-            {
-                var head_collision_check = Physics.SphereCast(
-                    capsule_bottom_point,
-                    collider_radius,
-                    vec_up,
-                    out var hit_jump,
-                    4,
-                    raycastMask);
-                
-                var jump_check = head_collision_check && hit_jump.distance <= ground_height_check_val + obstacleSeparationDistance + 0.01f;
-
-                if (jump_check)
-                {
-                    fall_speed = 0;
-                    is_jumping = false;
-                }
             }
-
-            var touch_ground = ground_collision_check && hit_ground.distance - ground_height_check_val - obstacleSeparationDistance < delta_time * fall_speed;
-            
-            if(!touch_ground && fall_speed < terminalVelocityFall)
-                fall_speed += delta_time * gravity;
-
-            current_position += (!ground_collision_check ? delta_time * fall_speed :  Mathf.Min(hit_ground.distance - ground_height_check_val - obstacleSeparationDistance, delta_time * fall_speed)) * vec_down;
-
-            slide_speed_vector = Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDecelerationTrajectoryChange);
-            if (slide_speed_vector.sqrMagnitude < 0.01f)
-                slide_speed_vector = vec_zero;
-
         }
-        
-        
-        
+
+        var touch_ground = ground_collision_check && hit_ground.distance - ground_height_check_val - obstacleSeparationDistance < delta_time * fall_speed;
+            
+        if(!touch_ground && fall_speed < terminalVelocityFall)
+            fall_speed += delta_time * gravity;
+
+        current_position += (!ground_collision_check ? delta_time * fall_speed :  Mathf.Min(hit_ground.distance - ground_height_check_val - obstacleSeparationDistance, delta_time * fall_speed)) * vec_down;
+
+        slide_speed_vector = Vector3.Lerp(slide_speed_vector, vec_zero, delta_time * slideDecelerationTrajectoryChange);
+        if (slide_speed_vector.sqrMagnitude < 0.01f)
+            slide_speed_vector = vec_zero;
+
+
+
         //--------------------------------------------------------------------------------------------------------------
     }
     
