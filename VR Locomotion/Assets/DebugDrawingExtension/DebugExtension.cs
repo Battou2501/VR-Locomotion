@@ -420,7 +420,7 @@ public static class DebugExtension
 	/// </param>
 	public static void DebugWireSphere(Vector3 position, Color color, float radius = 1.0f, float duration = 0, bool depthTest = true)
 	{
-		float angle = 10.0f;
+		float angle = 1.0f;
 		
 		Vector3 x = new Vector3(position.x, position.y + radius * Mathf.Sin(0), position.z + radius * Mathf.Cos(0));
 		Vector3 y = new Vector3(position.x + radius * Mathf.Cos(0), position.y, position.z + radius * Mathf.Sin(0));
@@ -430,7 +430,7 @@ public static class DebugExtension
 		Vector3 new_y;
 		Vector3 new_z;
 		
-		for(int i = 1; i < 37; i++){
+		for(int i = 1; i < 370; i++){
 			
 			new_x = new Vector3(position.x, position.y + radius * Mathf.Sin(angle*i*Mathf.Deg2Rad), position.z + radius * Mathf.Cos(angle*i*Mathf.Deg2Rad));
 			new_y = new Vector3(position.x + radius * Mathf.Cos(angle*i*Mathf.Deg2Rad), position.y, position.z + radius * Mathf.Sin(angle*i*Mathf.Deg2Rad));
