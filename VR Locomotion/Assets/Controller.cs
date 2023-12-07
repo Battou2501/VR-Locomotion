@@ -27,6 +27,9 @@ public class Controller : MonoBehaviour
     public float maxDecelCoefForBrokenLineType;
     public float moveCastBackStepDistance;
     public float obstacleSeparationDistance;
+    public bool useGroundLevelFixCheck;
+    public float minGroundIntersectionToIntervene;
+    public float maxGroundIntersectionToIntervene;
 
     public float moveSpeed;
     public float jumpStrength;
@@ -268,9 +271,11 @@ public class Controller : MonoBehaviour
             }
             
             //fix position if clipping through ground
+            if(!useGroundLevelFixCheck) return;
+            
             var gone_through_ground_depth = -(hit_ground.distance - ground_height_check_val - obstacleSeparationDistance);
             
-            if (gone_through_ground_depth is <= 0.01f or >= 2.1f) return;
+            if (gone_through_ground_depth <= minGroundIntersectionToIntervene || gone_through_ground_depth >= maxGroundIntersectionToIntervene) return;
 
             current_position += vec_up * gone_through_ground_depth;
                 
