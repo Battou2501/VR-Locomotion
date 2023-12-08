@@ -359,19 +359,10 @@ public class Controller : MonoBehaviour
         var move_dist_left = delta_time * slide_magnitude;
         var current_move_vec = slide_speed_vector.normalized;
         var current_surface_normal = surface_normal;
-        var is_avoiding_obstacle = false;
-        var avoid_iterations = 0;
 
         for(var i=0;i<5;i++)
         {
-            if (is_avoiding_obstacle)
-                avoid_iterations += 1;
-            else
-            {
-                avoid_iterations = 0;
-            }
-
-            check_movement2(current_move_vec, current_surface_normal, move_dist_left, out var new_move_vec, out var move_dist, out var new_surface_normal, out var will_avoid_obstacle);
+            check_movement2(current_move_vec, current_surface_normal, move_dist_left, out var new_move_vec, out var move_dist, out var new_surface_normal);
             
             current_position += move_dist * current_move_vec;
             
@@ -400,16 +391,8 @@ public class Controller : MonoBehaviour
             move_dist_left *= move_dot_mult;
             
             slide_magnitude *= move_dot_mult;
-            
-            is_avoiding_obstacle = will_avoid_obstacle;
-            
-            if(move_dist_left<=Mathf.Epsilon) break;
 
-            if (avoid_iterations <= 1 || !(move_dist < Mathf.Epsilon)) continue;
-            
-            current_move_vec = vec_zero;
-            slide_magnitude = 0;
-            break;
+            if(move_dist_left<=Mathf.Epsilon) break;
         }
 
         slide_speed_vector = current_move_vec * slide_magnitude;
@@ -604,7 +587,7 @@ public class Controller : MonoBehaviour
         }
 
         //move_dist = Mathf.Max(0,hit_dist - (moveCastBackStepDistance + obstacleSeparationDistance));
-        move_dist = Mathf.Max(0,hit_dist - moveCastBackStepDistance);
+        move_dist = Mathf.Max(0,hit_dist - moveCastBackStepDistance - 0.001f);
         
         return true;
 
@@ -661,12 +644,11 @@ public class Controller : MonoBehaviour
         }
     }
     
-    void check_movement2(Vector3 current_move_vec, Vector3 current_surface_normal, float left_move_dist, out Vector3 new_move_vec, out float move_dist, out Vector3 new_surface_normal, out bool will_avoid_obstacle)
+    void check_movement2(Vector3 current_move_vec, Vector3 current_surface_normal, float left_move_dist, out Vector3 new_move_vec, out float move_dist, out Vector3 new_surface_normal)
     {
         new_move_vec = current_move_vec;
         move_dist = left_move_dist;
         new_surface_normal = current_surface_normal;
-        will_avoid_obstacle = false;
         
         var move_back_offset = -moveCastBackStepDistance * current_move_vec;
         
