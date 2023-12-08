@@ -26,7 +26,7 @@ public class Controller : MonoBehaviour
     public SlideDecelTypes groundSlideDecelType;
     public float maxDecelCoefForBrokenLineType;
     public float moveCastBackStepDistance;
-    public float obstacleSeparationDistance;
+    //public float obstacleSeparationDistance;
     public bool useGroundLevelFixCheck;
     public float minGroundIntersectionToIntervene;
     public float maxGroundIntersectionToIntervene;
@@ -176,7 +176,8 @@ public class Controller : MonoBehaviour
     
     void overlap_check()
     {
-        var r = Physics.OverlapSphere(capsule_bottom_point, collider_radius + obstacleSeparationDistance, raycastMask);
+        //var r = Physics.OverlapSphere(capsule_bottom_point, collider_radius + obstacleSeparationDistance, raycastMask);
+        var r = Physics.OverlapSphere(capsule_bottom_point, collider_radius, raycastMask);
         
         if(r == null || r.Length == 0) return;
         
@@ -209,11 +210,13 @@ public class Controller : MonoBehaviour
         
         var dist = (closest_point - capsule_bottom_point).magnitude;
 
-        if(dist>=collider_radius + obstacleSeparationDistance) return;
+        //if(dist>=collider_radius + obstacleSeparationDistance) return;
+        if(dist>=collider_radius) return;
 
         var vec = (capsule_bottom_point - closest_point).normalized;
 
-        current_position += (collider_radius + obstacleSeparationDistance - dist) * vec;
+        //current_position += (collider_radius + obstacleSeparationDistance - dist) * vec;
+        current_position += (collider_radius - dist) * vec;
 
         update_capsule_points();
     }
@@ -231,7 +234,8 @@ public class Controller : MonoBehaviour
             4,
             raycastMask);
                 
-        var jump_check = head_collision_check && hit_jump.distance <= ground_height_check_val + obstacleSeparationDistance + 0.05f;
+        //var jump_check = head_collision_check && hit_jump.distance <= ground_height_check_val + obstacleSeparationDistance + 0.05f;
+        var jump_check = head_collision_check && hit_jump.distance <= ground_height_check_val + 0.05f;
 
         if (jump_check) return;
         
@@ -253,7 +257,8 @@ public class Controller : MonoBehaviour
             vec_down,
             out var hit_ground, 10, raycastMask);
 
-            var ground_check = ground_collision_check && hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance + 0.001f;
+            //var ground_check = ground_collision_check && hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance + 0.001f;
+            var ground_check = ground_collision_check && hit_ground.distance <= ground_height_check_val + 0.001f;
 
         //On the ground
         if (ground_check && !is_jumping)
@@ -273,7 +278,8 @@ public class Controller : MonoBehaviour
             //fix position if clipping through ground
             if(!useGroundLevelFixCheck) return;
             
-            var gone_through_ground_depth = -(hit_ground.distance - ground_height_check_val - obstacleSeparationDistance);
+            //var gone_through_ground_depth = -(hit_ground.distance - ground_height_check_val - obstacleSeparationDistance);
+            var gone_through_ground_depth = -(hit_ground.distance - ground_height_check_val);
             
             if (gone_through_ground_depth <= minGroundIntersectionToIntervene || gone_through_ground_depth >= maxGroundIntersectionToIntervene) return;
 
@@ -311,7 +317,8 @@ public class Controller : MonoBehaviour
                 4,
                 raycastMask);
                 
-            var jump_check = head_collision_check && hit_jump.distance <= ground_height_check_val + obstacleSeparationDistance + 0.01f;
+            //var jump_check = head_collision_check && hit_jump.distance <= ground_height_check_val + obstacleSeparationDistance + 0.01f;
+            var jump_check = head_collision_check && hit_jump.distance <= ground_height_check_val + 0.01f;
 
             if (jump_check)
             {
@@ -320,12 +327,14 @@ public class Controller : MonoBehaviour
             }
         }
 
-        var touch_ground = ground_collision_check && hit_ground.distance - ground_height_check_val - obstacleSeparationDistance < delta_time * fall_speed;
+        //var touch_ground = ground_collision_check && hit_ground.distance - ground_height_check_val - obstacleSeparationDistance < delta_time * fall_speed;
+        var touch_ground = ground_collision_check && hit_ground.distance - ground_height_check_val < delta_time * fall_speed;
             
         if(!touch_ground && fall_speed < terminalVelocityFall)
             fall_speed += delta_time * gravity;
 
-        current_position += (!ground_collision_check ? delta_time * fall_speed :  Mathf.Min(hit_ground.distance - ground_height_check_val - obstacleSeparationDistance, delta_time * fall_speed)) * vec_down;
+        //current_position += (!ground_collision_check ? delta_time * fall_speed :  Mathf.Min(hit_ground.distance - ground_height_check_val - obstacleSeparationDistance, delta_time * fall_speed)) * vec_down;
+        current_position += (!ground_collision_check ? delta_time * fall_speed :  Mathf.Min(hit_ground.distance - ground_height_check_val, delta_time * fall_speed)) * vec_down;
 
         update_capsule_points();
         
@@ -530,8 +539,10 @@ public class Controller : MonoBehaviour
 
         var move_ceiling_check = Physics.SphereCast(capsule_top_point + moveCastBackStepDistance * vec_down + move_dist * current_move_vec_flat, collider_radius, vec_up, out var hit_ceiling);
 
-        var ceiling_check = Vector3.Dot(vec_up, current_move_vec)<=0 || (!move_ceiling_check || hit_ceiling.distance > moveCastBackStepDistance + obstacleSeparationDistance);
-        var move_check = (!move_hit_check || hit_move.distance > left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance);
+        //var ceiling_check = Vector3.Dot(vec_up, current_move_vec)<=0 || (!move_ceiling_check || hit_ceiling.distance > moveCastBackStepDistance + obstacleSeparationDistance);
+        //var move_check = (!move_hit_check || hit_move.distance > left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance);
+        var ceiling_check = Vector3.Dot(vec_up, current_move_vec)<=0 || !move_ceiling_check || hit_ceiling.distance > moveCastBackStepDistance;
+        var move_check = !move_hit_check || hit_move.distance > left_move_dist + moveCastBackStepDistance;
 
         var hit_dist = hit_move.distance;
 
@@ -592,7 +603,8 @@ public class Controller : MonoBehaviour
             new_move_vec = Vector3.ProjectOnPlane(current_move_vec_flat, v).normalized;
         }
 
-        move_dist = Mathf.Max(0,hit_dist - (moveCastBackStepDistance + obstacleSeparationDistance));
+        //move_dist = Mathf.Max(0,hit_dist - (moveCastBackStepDistance + obstacleSeparationDistance));
+        move_dist = Mathf.Max(0,hit_dist - moveCastBackStepDistance);
         
         return true;
 
@@ -625,7 +637,8 @@ public class Controller : MonoBehaviour
                 2,
                 raycastMask);
         
-            return !step_hit_check || hit_step.distance - obstacleSeparationDistance - moveCastBackStepDistance > minStepDepth;
+            //return !step_hit_check || hit_step.distance - obstacleSeparationDistance - moveCastBackStepDistance > minStepDepth;
+            return !step_hit_check || hit_step.distance - moveCastBackStepDistance > minStepDepth;
         }
         
         bool check_step_spheres( Vector3 offset)
@@ -669,7 +682,8 @@ public class Controller : MonoBehaviour
 
         var hit_dist = hit_move.distance;
 
-        if (!move_hit_check || hit_dist > left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance) return;
+        //if (!move_hit_check || hit_dist > left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance) return;
+        if (!move_hit_check || hit_dist > left_move_dist + moveCastBackStepDistance) return;
 
         var hit_norm = hit_move.normal;
 
@@ -683,7 +697,8 @@ public class Controller : MonoBehaviour
         
         //new_move_vec = Vector3.Cross(move_vec_right, new_surface_normal).normalized;
         
-        move_dist = Mathf.Max(0, hit_dist - (moveCastBackStepDistance + obstacleSeparationDistance));
+        //move_dist = Mathf.Max(0, hit_dist - (moveCastBackStepDistance + obstacleSeparationDistance));
+        move_dist = Mathf.Max(0, hit_dist - moveCastBackStepDistance);
     }
 
 }
