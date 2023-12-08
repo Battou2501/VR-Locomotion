@@ -247,7 +247,7 @@ public class Controller : MonoBehaviour
             //when landed from in air state
             if (!is_grounded)
             {
-                slide_speed_vector = Vector3.Project(vec_down * fall_speed, slide_vector);
+                slide_speed_vector += Vector3.Project(vec_down * fall_speed, slide_vector);
                 fall_speed = 0;
                 is_grounded = true;
             }
