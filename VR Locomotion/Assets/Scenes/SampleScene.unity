@@ -2502,7 +2502,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 439154689}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -104.7, y: 4.38, z: -22.66}
+  m_LocalPosition: {x: -104.7, y: 3.49, z: -22.66}
   m_LocalScale: {x: 25.809996, y: 0.30000013, z: 22.500011}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -9655,6 +9655,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1884625081}
   - component: {fileID: 1884625077}
+  - component: {fileID: 1884625084}
   - component: {fileID: 1884625082}
   - component: {fileID: 1884625083}
   m_Layer: 6
@@ -9671,7 +9672,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1884625076}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a07fdcf0589f30b4da4add50c956e0f5, type: 3}
   m_Name: 
@@ -9707,7 +9708,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1884625076}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -15.2, y: 29.118, z: 25.9}
+  m_LocalPosition: {x: 57.21, y: 1, z: 2.35}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -9746,6 +9747,42 @@ CapsuleCollider:
   m_Height: 2.12
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1884625084
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1884625076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef8fc4cac83af2942b5484ba646d67f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  updateType: 0
+  gravity: 10
+  raycastMask:
+    serializedVersion: 2
+    m_Bits: 55
+  colliderRadius: 0.34
+  colliderHeight: 2.08
+  colliderMinHeight: 1
+  stepCheckSpheresRadius: 0.05
+  terminalVelocityFall: 200
+  terminalVelocitySlide: 200
+  maxClimbAngle: 45
+  maxStepHeight: 0.35
+  minStepDepth: 0.25
+  slideDecelerationGround: 10
+  slideDecelerationTrajectoryChange: 0.7
+  groundSlideDecelType: 0
+  maxDecelCoefForBrokenLineType: 4
+  moveCastBackStepDistance: 0.1
+  useGroundLevelFixCheck: 0
+  minGroundIntersectionToIntervene: 0
+  maxGroundIntersectionToIntervene: 0
+  moveSpeed: 3
+  jumpStrength: 6
 --- !u!1 &1905866413
 GameObject:
   m_ObjectHideFlags: 0
