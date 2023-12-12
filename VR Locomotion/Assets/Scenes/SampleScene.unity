@@ -1025,7 +1025,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 116518978}
   m_LocalRotation: {x: 0.3987491, y: 0, z: 0, w: 0.91706014}
-  m_LocalPosition: {x: 15.4, y: 17.6, z: -25.8}
+  m_LocalPosition: {x: 63.2, y: 17.6, z: -25.8}
   m_LocalScale: {x: 25.809996, y: 0.29999998, z: 72.54}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -10666,6 +10666,7 @@ GameObject:
   - component: {fileID: 1884625081}
   - component: {fileID: 1884625077}
   - component: {fileID: 1884625084}
+  - component: {fileID: 1884625085}
   - component: {fileID: 1884625082}
   - component: {fileID: 1884625083}
   m_Layer: 6
@@ -10718,7 +10719,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1884625076}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -46.96, y: 1, z: -40.24}
+  m_LocalPosition: {x: 17.5, y: 64.56, z: -18.35}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -10767,6 +10768,40 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ef8fc4cac83af2942b5484ba646d67f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  updateType: 0
+  gravity: 10
+  raycastMask:
+    serializedVersion: 2
+    m_Bits: 55
+  colliderRadius: 0.34
+  colliderHeight: 2.08
+  colliderMinHeight: 1
+  stepCheckSpheresRadius: 0.05
+  terminalVelocityFall: 200
+  terminalVelocitySlide: 200
+  maxClimbAngle: 45
+  maxStepHeight: 0.35
+  minStepDepth: 0.25
+  slideDecelerationGround: 10
+  slideDecelerationTrajectoryChange: 0.7
+  groundSlideDecelType: 0
+  maxDecelCoefForBrokenLineType: 4
+  moveCastBackStepDistance: 0.1
+  obstacleSeparationDistance: 0.001
+  moveSpeed: 3
+  jumpStrength: 6
+--- !u!114 &1884625085
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1884625076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a29df04549d794646a7476476ee9132b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   updateType: 0
