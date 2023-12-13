@@ -1,52 +1,59 @@
+using System;
+using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
 public class  Controller4 : MonoBehaviour
 {
-    public enum SlideDecelTypes
-    {
-        broken_line_zero_to_one_to_N = 0,
-        curve_zero_to_4_trhough_one = 1
-    }
-
     public enum UpdateTypes
     {
         every_frame = 0,
         fixed_frame = 1
     }
 
+    public enum ThresholdSpeedActions
+    {
+        stop = 0,
+        subtract = 1
+    }
+
     public UpdateTypes updateType;
     
     public float gravity = 9.8f;
+    
+    [Header("Air resistance while falling or sliding")]
     [Range(0,1)]
-    public float drag;
+    public float airDrag;
+    
+    [Header("Friction when sliding ground with incline\nlower than Max climb angle")]
     [Range(0,1)]
-    [FormerlySerializedAs("slideDecelerationGround")] public float groundFriction;
+    public float groundFriction;
+    
+    [Header("Falling/Sliding speed needed to continue slide\nwhen touching ground with incline lower than Max climb angle")]
+    public float groundSlideSpeedThreshold;
+
+    [Header("Stop - stops if fall speed is lower\nSubtract - subtracts threshold speed from fall speed")]
+    public ThresholdSpeedActions thresholdSpeedActions;
+    
+    [Header("Friction when sliding ground with incline\ngreater than Max climb angle")]
     [Range(0,1)]
-    [FormerlySerializedAs("slideDecelerationTrajectoryChange")] public float slideFriction;
+    public float slideFriction;
+    
+    [Space(20)]
     public LayerMask raycastMask;
     public float colliderRadius;
     public float colliderHeight;
     public float colliderMinHeight;
     public float stepCheckSpheresRadius;
-    public float terminalVelocityFall;
-    public float terminalVelocitySlide;
     public float maxClimbAngle;
     public float maxStepHeight;
     public float minStepDepth;
-    public SlideDecelTypes groundSlideDecelType;
-    public float maxDecelCoefForBrokenLineType;
     public float moveCastBackStepDistance;
     public float obstacleSeparationDistance;
-    //public bool useGroundLevelFixCheck;
-    //public float minGroundIntersectionToIntervene;
-    //public float maxGroundIntersectionToIntervene;
 
     public float moveSpeed;
     public float jumpStrength;
-
-    //float fall_speed;
 
     float climb_angle_dot;
 
@@ -171,8 +178,6 @@ public class  Controller4 : MonoBehaviour
 
         handle_movement();
 
-        handle_ground_check();
-
         handle_gravity();
 
         transform_local.position = current_position;
@@ -186,52 +191,6 @@ public class  Controller4 : MonoBehaviour
         capsule_bottom_point = current_position - capsule_point_offset;
     }
     
-    void overlap_check()
-    {
-        //var r = Physics.OverlapSphere(capsule_bottom_point, collider_radius + obstacleSeparationDistance, raycastMask);
-        var r = Physics.OverlapSphere(capsule_bottom_point, collider_radius, raycastMask);
-        
-        if(r == null || r.Length == 0) return;
-        
-        var closest_point = r[0].ClosestPoint(capsule_bottom_point);
-        var closest_sqr_dist = (closest_point - capsule_bottom_point).sqrMagnitude;
-
-        for (var i = 1; i < r.Length; i++)
-        {
-            var c = r[i];
-            
-            var p = c.ClosestPoint(capsule_bottom_point);
-            var d = (p - capsule_bottom_point).sqrMagnitude;
-            
-            
-            if(d>=closest_sqr_dist) continue;
-            
-            var dot = Vector3.Dot(vec_up, (p - capsule_bottom_point));
-
-            if(dot>=0) continue;
-            
-            closest_point = p;
-            closest_sqr_dist = d;
-        }
-        
-        var dot_closest = Vector3.Dot(vec_up, (closest_point - capsule_bottom_point));
-
-        if(dot_closest>=0) return;
-        
-        //Debug.DrawRay(closest_point, vec_up, Color.red);
-        
-        var dist = (closest_point - capsule_bottom_point).magnitude;
-
-        //if(dist>=collider_radius + obstacleSeparationDistance) return;
-        if(dist>=collider_radius) return;
-
-        var vec = (capsule_bottom_point - closest_point).normalized;
-
-        //current_position += (collider_radius + obstacleSeparationDistance - dist) * vec;
-        current_position += (collider_radius - dist) * vec;
-
-        update_capsule_points();
-    }
     
     void handle_jump()
     {
@@ -269,9 +228,6 @@ public class  Controller4 : MonoBehaviour
     
     void handle_ground_check()
     {
-        //GRAVITY
-        //--------------------------------------------------------------------------------------------------------------
-
         surface_normal = vec_up;
         fall_vector = vec_down;
         
@@ -294,178 +250,197 @@ public class  Controller4 : MonoBehaviour
         {
             is_grounded = false;
         }
-        //--------------------------------------------------------------------------------------------------------------
     }
     
     void handle_gravity()
     {
-        if(is_climbing || is_grounded && !is_sliding_incline && fall_speed_vector.sqrMagnitude < 0.001f)
+        if(is_climbing)
         {
             fall_speed_vector = vec_zero;
             return;
         }
         
-        //fall_speed_vector = fall_speed_vector.sqrMagnitude <= Mathf.Epsilon ? vec_down : fall_speed_vector;
+        handle_ground_check();
         
+        if(is_grounded && !is_sliding_incline && fall_speed_vector.sqrMagnitude < 0.001f)
+        {
+            fall_speed_vector = vec_zero;
+            return;
+        }
         
-        
-        
-        var slide_magnitude = fall_speed_vector.magnitude;
-        //slide_magnitude -= Mathf.Min(slide_magnitude, delta_time * slideDecelerationTrajectoryChange * Mathf.Pow(slide_magnitude/current_terminal_velocity,5));
-        
-        var move_dist_left = delta_time * slide_magnitude;
-        //var move_dist_left = delta_time * 3;
-        var current_move_vec = slide_magnitude <= Mathf.Epsilon ? vec_down : fall_speed_vector.normalized;
-        //var current_move_vec = vec_down;
-        var current_surface_normal = surface_normal;
+        var fall_speed = fall_speed_vector.magnitude;
+        var fall_dist_left = delta_time * fall_speed;
+        var current_fall_vec = fall_speed <= Mathf.Epsilon ? vec_down : fall_speed_vector.normalized;
 
-        var sv = current_move_vec;
+        Debug.Log(fall_speed);
+        
         
         for(var i=1;i<6;i++)
         {
-            if(move_dist_left<=Mathf.Epsilon) break;
             
-            check_movement2(i, current_move_vec, current_surface_normal, move_dist_left, out var new_move_vec, out var move_dist, out var new_surface_normal);
+            if(fall_dist_left<=Mathf.Epsilon) break;
             
-            if(move_dist>0.001f*delta_time)
-                current_position += move_dist * current_move_vec;
-            
+            check_fall_movement(i, current_fall_vec, fall_dist_left, out var new_move_vec, out var move_dist_potential, out var move_dist_actual);
+
+            if(move_dist_actual>0.001f*delta_time)
+                current_position += move_dist_actual * current_fall_vec;
+
             update_capsule_points();
 
-            var current_move_vec_flat = Vector3.ProjectOnPlane(current_move_vec, vec_up).normalized;
+            handle_ground_check();
             
-            var move_dot_mult = Mathf.Max(0, Vector3.Dot(current_move_vec, new_move_vec)) * (Vector3.Dot(current_move_vec_flat, new_move_vec) < 0 ? 0 : 1);
+            //var current_move_vec_flat = Vector3.ProjectOnPlane(current_fall_vec, vec_up).normalized;
+            
+            //var move_dot_mult = Mathf.Max(0, Vector3.Dot(current_fall_vec, new_move_vec)) * (Vector3.Dot(current_move_vec_flat, new_move_vec) < 0 ? 0 : 1);
+            
+            //var vr = Vector3.Cross(vec_up, current_fall_vec);
+            //var vn = Vector3.Cross(current_fall_vec, vr);
+            var dot_down_1 = Vector3.Dot(vec_down, current_fall_vec);
+            var dot_down_2 = Vector3.Dot(vec_down, new_move_vec);
 
+            var move_dot_mult = 1f;//(1f - Mathf.Max(0, Vector3.Dot(vn, new_move_vec))) * (Vector3.Dot(current_fall_vec, new_move_vec) > 0 ? 1 : 0);
+
+            if (dot_down_2 < dot_down_1)
+            {
+                move_dot_mult = Mathf.Max(0, Vector3.Dot(current_fall_vec, new_move_vec));// * (1f-Mathf.Max(0,Vector3.Dot(vec_up, new_move_vec))); ПОД ВОПРОСОМ!!!
+            }
+            
             if (move_dot_mult <= 0)
             {
-                current_move_vec = vec_zero;
-                slide_magnitude = 0;
+                current_fall_vec = vec_zero;
+                fall_speed = 0;
                 break;
             }
             
-            current_surface_normal = new_surface_normal;
+            //current_surface_normal = new_surface_normal;
             
-            current_move_vec = new_move_vec;
+            current_fall_vec = new_move_vec;
             
-            move_dist_left -= move_dist;
-            move_dist_left *= move_dot_mult;
             
-            //slide_magnitude *= move_dot_mult;
+            fall_dist_left -= move_dist_potential;
 
-            if(move_dist_left<=0.0001f*delta_time) break;
+            if (move_dot_mult < 1f)
+            {
+                fall_dist_left *= move_dot_mult;
+                fall_speed *= move_dot_mult;
+
+                if (is_grounded && !is_sliding_incline)
+                {
+                    switch (thresholdSpeedActions)
+                    {
+                        case ThresholdSpeedActions.stop:
+                            if (fall_speed < groundSlideSpeedThreshold)
+                                fall_speed = 0;
+                            break;
+                        case ThresholdSpeedActions.subtract:
+                            fall_speed = Mathf.Max(0, fall_speed - groundSlideSpeedThreshold);
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+            }
+
+            if(fall_dist_left<=0.0001f*delta_time || fall_speed < 0.0001f) break;
         }
 
-        var dot_mult = Mathf.Max(0, Vector3.Dot(sv, current_move_vec));
         
-        fall_speed_vector = current_move_vec * slide_magnitude * dot_mult;
+        
+        
+        
+        //var dot_mult = Mathf.Max(0, Vector3.Dot(sv, current_fall_vec));
+
+        //if (is_grounded)
+        //    fall_speed *= (1f - groundFriction * delta_time);// Mathf.Lerp(fall_speed, 0, groundFriction * delta_time * gravity);
+        
+        //fall_speed_vector = current_fall_vec * fall_speed * dot_mult * (1f - drag * delta_time);
+        fall_speed_vector = current_fall_vec * fall_speed;// * (1f - drag * delta_time);
         
         
         
         
         //fall
-        //if (!is_grounded || is_sliding_incline)
+        
+        var accel_from_fall_vec_dot = 0f;
+        if (!is_grounded || is_sliding_incline)
+            accel_from_fall_vec_dot = Mathf.Max(0, Vector3.Dot(vec_down, fall_vector));
+
+        //var current_friction = is_sliding_incline ? slideFriction * friction_coefficient: groundFriction;// * friction_coefficient;
+        //var current_friction = is_sliding_incline ? slideFriction : groundFriction; // * friction_coefficient;
+
+        fall_speed_vector += accel_from_fall_vec_dot * delta_time * gravity * fall_vector;
+        //fall_speed_vector += accel_from_fall_vec_dot * delta_time * gravity * vec_down;
+        //fall_speed_vector += delta_time * gravity * vec_down * 1f;
+        
+        if (Mathf.Abs(fall_speed_vector.z)>0.001f)
         {
-            //var terminal_velocity_from_fall_speed_vec_dot = slide_magnitude <= Mathf.Epsilon ? 1 : Mathf.Max(0, Vector3.Dot(vec_down, current_move_vec));
-
-            var friction_vector = fall_speed_vector.sqrMagnitude > Mathf.Epsilon ? fall_speed_vector.normalized : !is_grounded ? vec_down : fall_vector;
             
-            var friction_coefficient = Mathf.Max(0, Vector3.Dot(vec_down, friction_vector));
-            friction_coefficient = 1f - friction_coefficient;
-            friction_coefficient *= friction_coefficient;
+        }
+        
+        //drag
+        fall_speed_vector = fall_speed_vector.normalized * fall_speed_vector.magnitude * (1f - airDrag * delta_time); //* gravity * Mathf.Pow(fall_speed_vector.magnitude / terminalVelocityFall, 1);
+
+        //friction
+        if (is_grounded)
+        {
+            var current_friction = is_sliding_incline ? slideFriction : groundFriction;
+            var slide_friction_dot = 1f - Vector3.Dot(fall_speed_vector.normalized, vec_down);
+            slide_friction_dot = slide_friction_dot * slide_friction_dot * slide_friction_dot;
             
-            var accel_from_fall_vec_dot = 0f;
-            if(!is_grounded || is_sliding_incline)
-                accel_from_fall_vec_dot = Mathf.Max(0, Vector3.Dot(vec_down, fall_vector));
-
-            //var current_friction = is_sliding_incline ? slideFriction * friction_coefficient: groundFriction;// * friction_coefficient;
-            var current_friction = is_sliding_incline ? slideFriction : groundFriction;// * friction_coefficient;
+            fall_speed_vector = fall_speed_vector.normalized * fall_speed_vector.magnitude * Mathf.Max(0,1f - current_friction * delta_time * Mathf.Lerp(1 * slide_friction_dot, 50, current_friction * current_friction * current_friction)); //* gravity * Mathf.Pow(fall_speed_vector.magnitude / terminalVelocityFall, 1);
             
-            //if (fall_speed_vector.sqrMagnitude <= current_terminal_velocity * current_terminal_velocity)
-            {
-                //var mag = fall_speed_vector.magnitude;
-
-                //var coef_accel = -1f;
-                //var coef_decel = 1f;
-                //if (Mathf.Abs(current_terminal_velocity) > 0.001f)
-                //{
-                //    var c = mag / current_terminal_velocity;
-                //    c = 1f - c * c * c;
-                //    //var s = Mathf.Sign(c);
-                //    //c = c * c * s;
-                //
-                //    coef_accel = Mathf.Max(-1f, c);
-                //    coef_decel = -Mathf.Min(0, c);
-                //}
-                //
-                //
-                //Debug.Log(fall_speed_vector.magnitude + "   " + current_terminal_velocity + "    " + coef_accel + "    " + coef_decel);
-                //Debug.Log(fall_speed_vector.magnitude );
-                Debug.Log(is_grounded);
-                //Debug.DrawRay(transform_local.position, fall_vector*10, Color.red);
-                //
-                fall_speed_vector += accel_from_fall_vec_dot * delta_time * gravity * fall_vector;
-                //fall_speed_vector += accel_from_fall_vec_dot * delta_time * gravity * vec_down;
-                //fall_speed_vector += delta_time * gravity * vec_down * 1f;
-
-                //fall_speed_vector -= fall_speed_vector.normalized * delta_time * gravity * Mathf.Pow(fall_speed_vector.magnitude / terminalVelocityFall, 1);
-                //var drag = 0.0001f * fall_speed_vector.magnitude * fall_speed_vector.magnitude * 0.5f;
-                //var drag = 0.7f * 0.18f * 1.1f * fall_speed_vector.magnitude * fall_speed_vector.magnitude * 0.5f;
-                
-                //drag
-                fall_speed_vector = fall_speed_vector.normalized * fall_speed_vector.magnitude * (1f-drag*delta_time);//* gravity * Mathf.Pow(fall_speed_vector.magnitude / terminalVelocityFall, 1);
-
-                //friction
-                if (is_grounded)
-                {
-                    //fall_speed_vector = fall_speed_vector.normalized * Mathf.Lerp(fall_speed_vector.magnitude, 0, current_friction * delta_time); //* gravity * Mathf.Pow(fall_speed_vector.magnitude / terminalVelocityFall, 1);
-                    fall_speed_vector = fall_speed_vector.normalized * fall_speed_vector.magnitude * (1f - current_friction*delta_time); //* gravity * Mathf.Pow(fall_speed_vector.magnitude / terminalVelocityFall, 1);
-                    //fall_speed_vector -= fall_speed_vector.normalized * fall_speed_vector.magnitude * current_friction * delta_time; //* gravity * Mathf.Pow(fall_speed_vector.magnitude / terminalVelocityFall, 1);
-                }
-
-
-
-                //mag = Mathf.Lerp(mag, current_terminal_velocity, delta_time * 0.5f);
-                //fall_speed_vector = fall_speed_vector.normalized * mag;
-                //fall_speed_vector -= Mathf.Min(mag,accel_from_fall_vec_dot * delta_time * gravity * coef_decel) * fall_speed_vector.normalized;
-
-                //var mag2 = fall_speed_vector.magnitude;
-                //fall_speed_vector = Vector3.Lerp(fall_speed_vector.normalized, is_grounded && !is_sliding_incline ? vec_zero : fall_vector, delta_time * current_decel_factor) * mag2;
-                //fall_speed_vector = Vector3.Slerp(fall_speed_vector.normalized, fall_vector, delta_time * slideDecelerationTrajectoryChange) * Mathf.Min(current_terminal_velocity,mag);
-
-            }
-            //else
-            {
-                //fall_speed_vector = Vector3.Lerp(fall_speed_vector, vec_zero, delta_time * slideDecelerationTrajectoryChange);
-            }
-            
-            //return;
+            //fall_speed_vector = fall_speed_vector.normalized * Mathf.Lerp(fall_speed_vector.magnitude, 0, current_friction * delta_time); //* gravity * Mathf.Pow(fall_speed_vector.magnitude / terminalVelocityFall, 1);
+            //fall_speed_vector -= fall_speed_vector.normalized * fall_speed_vector.magnitude * current_friction * delta_time; //* gravity * Mathf.Pow(fall_speed_vector.magnitude / terminalVelocityFall, 1);
+            //fall_speed_vector -= fall_speed_vector.normalized * Mathf.Min(fall_speed_vector.magnitude, current_friction * delta_time * gravity); //* gravity * Mathf.Pow(fall_speed_vector.magnitude / terminalVelocityFall, 1);
         }
 
-        //stand
-        //if (fall_speed_vector.sqrMagnitude > 0.01f)
-        //{
-        //    var slide_up_dot = Vector3.Dot(vec_up, fall_speed_vector.normalized);
-        //    slide_up_dot = groundSlideDecelType == SlideDecelTypes.broken_line_zero_to_one_to_N ? slide_up_dot : (slide_up_dot * 0.5f + 0.5f) * 2f;
-        //        
-        //    var slide_incline_slowdown_coefficient = groundSlideDecelType == SlideDecelTypes.curve_zero_to_4_trhough_one
-        //        ? slide_up_dot * slide_up_dot
-        //        : Mathf.Max(0, slide_up_dot) * (maxDecelCoefForBrokenLineType-1f) + Mathf.Min(1, slide_up_dot + 1);
-        //
-        //    fall_speed_vector = Vector3.Lerp(fall_speed_vector, vec_zero, delta_time * slideDecelerationGround * slide_incline_slowdown_coefficient);
-        //    return;
-        //}
-        //
-        //fall_speed_vector = vec_zero;
-        
-        
-        //fall_speed_vector = Vector3.Lerp(fall_speed_vector, vec_zero, delta_time * slideDecelerationTrajectoryChange);
-        
-        
-        
-        
-        
     }
+    
+    void check_fall_movement(int iter_num, Vector3 current_move_vec, float left_move_dist, out Vector3 new_move_vec, out float move_dist_potential, out float move_dist_actual)
+    {
+        new_move_vec = current_move_vec;
+        move_dist_potential = left_move_dist;
 
+        move_dist_actual = move_dist_potential;// * (1f - drag);
+        
+        var move_back_offset = -moveCastBackStepDistance * current_move_vec;
+        
+        var move_hit_check = Physics.CapsuleCast(
+            capsule_bottom_point + move_back_offset,
+            capsule_top_point + move_back_offset,
+            collider_radius,
+            current_move_vec,
+            out var hit_move,
+            2,
+            raycastMask);
+        
+        var hit_dist = hit_move.distance;
+
+        //Check if we hit something along the way
+        //if (!move_hit_check || hit_dist > left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance) return;
+        if (!move_hit_check || hit_dist > move_dist_actual + moveCastBackStepDistance + obstacleSeparationDistance) return;
+
+        
+        var hit_norm = hit_move.normal;
+
+        //new_surface_normal = hit_norm;
+        
+        //Normalize new vec parallel to current move vec
+        {
+            //var move_vec_right = Vector3.Cross(vec_up, current_move_vec);
+            //var v = Vector3.ProjectOnPlane(hit_norm, move_vec_right);
+            //new_move_vec = Vector3.ProjectOnPlane(current_move_vec, v).normalized;
+        }
+        //Just project move vec to hit normal plane
+        {
+            new_move_vec = Vector3.ProjectOnPlane(current_move_vec, hit_norm).normalized;
+        }
+        
+        move_dist_actual = Mathf.Max(iter_num == 1? -1000 : 0, hit_dist - moveCastBackStepDistance - obstacleSeparationDistance);
+        //move_dist = Mathf.Max(0, hit_dist - moveCastBackStepDistance - 0.001f);
+    }
+    
+    
     void handle_movement()
     {
         //MOVEMENT
@@ -667,48 +642,6 @@ public class  Controller4 : MonoBehaviour
         }
     }
     
-    void check_movement2(int iter_num, Vector3 current_move_vec, Vector3 current_surface_normal, float left_move_dist, out Vector3 new_move_vec, out float move_dist, out Vector3 new_surface_normal)
-    {
-        new_move_vec = current_move_vec;
-        move_dist = left_move_dist;
-        new_surface_normal = current_surface_normal;
-        
-        var move_back_offset = -moveCastBackStepDistance * current_move_vec;
-        
-        var move_hit_check = Physics.CapsuleCast(
-            capsule_bottom_point + move_back_offset,
-            capsule_top_point + move_back_offset,
-            collider_radius,
-            current_move_vec,
-            out var hit_move,
-            2,
-            raycastMask);
-        
-        var hit_dist = hit_move.distance;
-
-        
-        
-        if (!move_hit_check || hit_dist > left_move_dist + moveCastBackStepDistance + 0.001f) return;
-
-        var hit_norm = hit_move.normal;
-
-        var move_vec_right = Vector3.Cross(vec_up, current_move_vec);
-        
-        new_surface_normal = hit_norm;
-        
-        var v = Vector3.ProjectOnPlane(new_surface_normal, move_vec_right);
-        
-        new_move_vec = Vector3.ProjectOnPlane(current_move_vec, v).normalized;
-        
-        move_dist = Mathf.Max(iter_num == 1? -1000 : 0, hit_dist - moveCastBackStepDistance - obstacleSeparationDistance);
-        //move_dist = Mathf.Max(0, hit_dist - moveCastBackStepDistance - 0.001f);
-
-        if (Vector3.Dot(hit_norm, vec_up) > 0)
-        {
-            is_grounded = true;
-            is_sliding_incline = Vector3.Dot(vec_up, hit_norm) < climb_angle_dot;
-            surface_normal = hit_norm;
-        }
-    }
+    
 
 }
