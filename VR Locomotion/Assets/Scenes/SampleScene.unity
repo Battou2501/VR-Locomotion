@@ -11705,7 +11705,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1884625076}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 80ef9852178e9864b9251de4657ee25e, type: 3}
   m_Name: 
@@ -11713,8 +11713,9 @@ MonoBehaviour:
   updateType: 0
   gravity: 9.8
   airDrag: 0.1
-  groundFriction: 0.1
-  groundSlideSpeedThreshold: 0
+  groundFriction: 0.8
+  groundSlideSpeedThreshold: 8
+  thresholdSpeedActions: 0
   slideFriction: 0.1
   raycastMask:
     serializedVersion: 2
@@ -11737,7 +11738,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1884625076}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d71c2f5b3a184e5aaa20caa8ee72f39f, type: 3}
   m_Name: 
@@ -12838,7 +12839,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2119044136}
   m_LocalRotation: {x: 0.5, y: -0.5, z: -0.5, w: 0.5}
-  m_LocalPosition: {x: 17.6, y: 21.5, z: -88.1}
+  m_LocalPosition: {x: 17.6, y: 12.45, z: -81.29}
   m_LocalScale: {x: 40, y: 0.30000004, z: 53.3}
   m_ConstrainProportionsScale: 0
   m_Children: []
