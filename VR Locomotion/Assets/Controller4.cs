@@ -227,7 +227,6 @@ public class  Controller4 : MonoBehaviour
         
         if (jump_check) return;
         
-        //is_jumping = true;
         fall_speed_vector = new Vector3(fall_speed_vector.x, jumpStrength, fall_speed_vector.z);
     }
 
@@ -241,8 +240,8 @@ public class  Controller4 : MonoBehaviour
             out var hit_ground, 10, raycastMask);
 
         hit = hit_ground;
-        
-        return ground_collision_check && hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance * 2;// + 0.001f;
+
+        return ground_collision_check && hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance;// * 2;
     }
     
     void handle_ground_check()
@@ -273,13 +272,15 @@ public class  Controller4 : MonoBehaviour
     
     void handle_gravity()
     {
+        
+        handle_ground_check();
+        
+        
         if(is_climbing)
         {
             fall_speed_vector = vec_zero;
             return;
         }
-        
-        handle_ground_check();
         
         if(is_grounded && !is_sliding_incline && fall_speed_vector.sqrMagnitude < 0.001f)
         {
@@ -441,8 +442,8 @@ public class  Controller4 : MonoBehaviour
         //{
             //var n = Vector3.Cross(vec_up, new_move_vec);
             //n = Vector3.Cross(new_move_vec,n).normalized;
-                
-        move_dot_mult = Mathf.Max(-1,Mathf.Max(-1, Vector3.Dot(current_move_vec, new_move_vec)) - Mathf.Max(-1, Vector3.Dot(current_move_vec, -hit_norm)) * slideFriction);
+        var current_friction = is_sliding_incline ? slideFriction : groundFriction;
+        move_dot_mult = Mathf.Max(-1,Mathf.Max(-1, Vector3.Dot(current_move_vec, new_move_vec)) - Mathf.Max(-1, Vector3.Dot(current_move_vec, -hit_norm)) * current_friction);
         //}
         
     }
