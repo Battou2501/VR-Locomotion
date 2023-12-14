@@ -14,7 +14,7 @@ namespace DefaultNamespace
         void Start()
         {
             rb = GetComponent<Rigidbody>();
-            rb.velocity = Vector3.down*100;
+            //rb.velocity = Vector3.down*100;
         }
 
         void FixedUpdate()

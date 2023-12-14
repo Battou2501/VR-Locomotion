@@ -120,7 +120,7 @@ public class  Controller4 : MonoBehaviour
         vec_left = Vector3.left;
         vec_right = Vector3.right;
 
-        fall_speed_vector = vec_down * 100;
+        //fall_speed_vector = vec_down * 100;
     }
 
 
@@ -281,11 +281,11 @@ public class  Controller4 : MonoBehaviour
         
         handle_ground_check();
         
-        //if(is_grounded && !is_sliding_incline && fall_speed_vector.sqrMagnitude < 0.001f)
-        //{
-        //    fall_speed_vector = vec_zero;
-        //    return;
-        //}
+        if(is_grounded && !is_sliding_incline && fall_speed_vector.sqrMagnitude < 0.001f)
+        {
+            fall_speed_vector = vec_zero;
+            return;
+        }
         
         var fall_speed = fall_speed_vector.magnitude;
         var fall_dist_left = delta_time * fall_speed;
@@ -299,7 +299,7 @@ public class  Controller4 : MonoBehaviour
             
             if(fall_dist_left<=Mathf.Epsilon) break;
             
-            check_fall_movement(i, current_fall_vec, fall_dist_left, out var new_move_vec, out var move_dist);
+            check_fall_movement(i, current_fall_vec, fall_dist_left, out var new_move_vec, out var move_dist, out var move_dot_mult);
 
             if(move_dist>0.001f*delta_time)
                 current_position += move_dist * current_fall_vec;
@@ -307,18 +307,7 @@ public class  Controller4 : MonoBehaviour
             update_capsule_points();
 
             handle_ground_check();
-            
-            var dot_down_1 = Vector3.Dot(vec_down, current_fall_vec);
-            var dot_down_2 = Vector3.Dot(vec_down, new_move_vec);
 
-            var move_dot_mult = 1f;
-
-            if (dot_down_2 < dot_down_1)
-            {
-                //Работает при спуске, но недостаточно замедляет при подъеме
-               move_dot_mult = Mathf.Max(0,Mathf.Max(-1, Vector3.Dot(current_fall_vec, new_move_vec)) - Mathf.Max(-1, Vector3.Dot(current_fall_vec, -surface_normal)) * slideFriction);
-            }
-            
             if (move_dot_mult <= 0)
             {
                 current_fall_vec = vec_zero;
@@ -361,19 +350,14 @@ public class  Controller4 : MonoBehaviour
         
         
         
+        //--------------------------------------------------------------------------------------------------------------
+        //fall      ////////////////////////////////////////////////////////////////////////////////////////////////////
+        //--------------------------------------------------------------------------------------------------------------
         
-        //fall
         
         //acceleration
         //--------------------------------------------------------------------------------------------------------------
-        
-        //var accel_from_fall_vec_dot = 0f;
-        //if (!is_grounded || is_sliding_incline)
-        //    accel_from_fall_vec_dot = Mathf.Max(0, Vector3.Dot(vec_down, fall_vector.normalized));
-
-        //var accel = accel_from_fall_vec_dot * delta_time * gravity * fall_vector.normalized;
-        //var accel = delta_time * gravity * fall_vector;
-        var accel = delta_time * gravity;// * accel_from_fall_vec_dot;// * vec_down;
+        var accel = delta_time * gravity;
         //--------------------------------------------------------------------------------------------------------------
         
         //drag
@@ -383,31 +367,32 @@ public class  Controller4 : MonoBehaviour
 
         //friction
         //--------------------------------------------------------------------------------------------------------------
-        var friction = 0f;//vec_zero;
+        var friction = 0f;
         if (is_grounded)
         {
             var current_friction = is_sliding_incline ? slideFriction : groundFriction;
             var normal_force = gravity * Vector3.Dot(surface_normal, vec_up);
             var friction_corce = normal_force * current_friction;
-            friction = Mathf.Min(friction_corce * delta_time, accel);// * fall_speed_vector.normalized;
+            friction = Mathf.Min(friction_corce * delta_time, accel);
         }
         //--------------------------------------------------------------------------------------------------------------
 
         
         //applying acceleration, drag and friction
         //--------------------------------------------------------------------------------------------------------------
-        //fall_speed_vector += accel * fall_vector;
-        //fall_speed_vector *= drag;
-        //fall_speed_vector -= friction * fall_speed_vector_normalized;
+        fall_speed_vector += accel * fall_vector;
+        fall_speed_vector *= drag;
+        fall_speed_vector -= friction * fall_speed_vector_normalized;
         //--------------------------------------------------------------------------------------------------------------
 
     }
     
-    void check_fall_movement(int iter_num, Vector3 current_move_vec, float left_move_dist, out Vector3 new_move_vec, out float move_dist)
+    void check_fall_movement(int iter_num, Vector3 current_move_vec, float left_move_dist, out Vector3 new_move_vec, out float move_dist, out float move_dot_mult)
     {
         new_move_vec = current_move_vec;
         move_dist = left_move_dist;
-
+        move_dot_mult = 1f;
+        
         var move_back_offset = -moveCastBackStepDistance * current_move_vec;
         
         var move_hit_check = Physics.CapsuleCast(
@@ -446,6 +431,20 @@ public class  Controller4 : MonoBehaviour
             default:
                 throw new ArgumentOutOfRangeException();
         }
+        
+        //var dot_down_1 = Vector3.Dot(vec_down, current_fall_vec);
+        //var dot_down_2 = Vector3.Dot(vec_down, new_move_vec);
+
+        //var move_dot_mult = 1f;
+
+        //if (dot_down_2 < dot_down_1)
+        //{
+            //var n = Vector3.Cross(vec_up, new_move_vec);
+            //n = Vector3.Cross(new_move_vec,n).normalized;
+                
+        move_dot_mult = Mathf.Max(-1,Mathf.Max(-1, Vector3.Dot(current_move_vec, new_move_vec)) - Mathf.Max(-1, Vector3.Dot(current_move_vec, -hit_norm)) * slideFriction);
+        //}
+        
     }
     
     
