@@ -17,6 +17,12 @@ public class  Controller4 : MonoBehaviour
         parallel_to_sliding_vector = 1
     }
 
+    public enum SlideSlowdownTypes
+    {
+        slowdown_speedup = 0,
+        slowdown_full_speed = 1
+    }
+    
     [Header("Which method is used to calculate movement")]
     [FormerlySerializedAs("updateType")] public UpdateTypes updateMovementDuring;
     
@@ -39,6 +45,8 @@ public class  Controller4 : MonoBehaviour
 
     [Header("How to calculate ne trajectory on collision when sliding\nProject - will project sliding vector to surface plane (Same as Unity's physics)\nParallel - new vector will only change incline")]
     public SlidingTrajectoryChangeTypes slidingTrajectoryChangeType;
+
+    public SlideSlowdownTypes slideSlowdownType;
     
     [Space(20)]
     public LayerMask raycastMask;
@@ -85,6 +93,7 @@ public class  Controller4 : MonoBehaviour
     float ground_height_check_val;
     
     float delta_time;
+    float one_over_delta_time;
     
     bool is_grounded;
 
@@ -93,7 +102,10 @@ public class  Controller4 : MonoBehaviour
     bool is_jump_requested;
 
     bool is_sliding_incline;
-    
+
+    bool is_moving;
+
+    Vector3 last_move_vector;
     
     
     void Start()
@@ -119,6 +131,7 @@ public class  Controller4 : MonoBehaviour
         if(updateMovementDuring != UpdateTypes.every_frame) return;
         
         delta_time = Time.deltaTime;
+        one_over_delta_time = 1.0f / delta_time;
         
         calculate_position();
     }
@@ -128,6 +141,7 @@ public class  Controller4 : MonoBehaviour
         if(updateMovementDuring != UpdateTypes.fixed_frame) return;
         
         delta_time = Time.fixedDeltaTime;
+        one_over_delta_time = 1.0f / delta_time;
         
         calculate_position();
     }
@@ -183,10 +197,16 @@ public class  Controller4 : MonoBehaviour
         
         handle_jump();
 
+        var position_before_move = current_position;
+        
         handle_movement();
+
+        var position_after_move = current_position;
 
         handle_gravity();
 
+        last_move_vector = position_after_move - position_before_move;
+        
         transform_local.position = current_position;
 
         Physics.SyncTransforms();
@@ -205,7 +225,7 @@ public class  Controller4 : MonoBehaviour
         if (!is_grounded || !is_jump_requested) return;
 
         is_jump_requested = false;
-        
+
         var head_collision_check = Physics.SphereCast(
             capsule_bottom_point,
             collider_radius,
@@ -232,7 +252,7 @@ public class  Controller4 : MonoBehaviour
 
         hit = hit_ground;
 
-        return ground_collision_check && hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance;// * 2;
+        return ground_collision_check && hit_ground.distance <= ground_height_check_val + obstacleSeparationDistance * 3;//Consider adding extra clearance only when grounded (is_grounded ? 4 : 1);
     }
     
     void handle_ground_check()
@@ -273,11 +293,34 @@ public class  Controller4 : MonoBehaviour
             return;
         }
         
-        if(is_grounded && !is_sliding_incline && fall_speed_vector.sqrMagnitude < 0.001f)
+        if(is_grounded && !is_sliding_incline && fall_speed_vector.sqrMagnitude < 0.0001f)
         {
             fall_speed_vector = vec_zero;
             return;
         }
+        
+        if (slideSlowdownType == SlideSlowdownTypes.slowdown_speedup && !is_moving && is_grounded && last_move_vector.magnitude > 0.0001f)
+        {
+            
+            var move_on_slide_plane = Vector3.ProjectOnPlane(last_move_vector, surface_normal);
+            var dot = Vector3.Dot(move_on_slide_plane, fall_speed_vector) <= 0;
+            var move_parallel_to_slide = Vector3.Project(move_on_slide_plane, fall_speed_vector);
+
+            //If movement vector is at least partially in the opposite direction to slide
+            if (dot)
+            {
+                if (move_parallel_to_slide.magnitude > fall_speed_vector_magnitude * delta_time)
+                {
+                    fall_speed_vector = vec_zero;
+                    fall_speed_vector_magnitude = 0f;
+                    return;
+                }
+
+                fall_speed_vector += move_parallel_to_slide * one_over_delta_time;
+            }
+            
+        }
+        
         
         var fall_speed = fall_speed_vector.magnitude;
         var fall_dist_left = delta_time * fall_speed;
@@ -420,8 +463,12 @@ public class  Controller4 : MonoBehaviour
         //MOVEMENT
         //--------------------------------------------------------------------------------------------------------------
 
+        is_moving = false;
+        
         if(move_vec.sqrMagnitude< 0.01f) return;
 
+        is_moving = true;
+        
         is_climbing = false;
 
         var current_move_vec_flat = move_vec;
@@ -488,6 +535,9 @@ public class  Controller4 : MonoBehaviour
         {
             var move_on_slide_plane = Vector3.ProjectOnPlane(current_iteration_moved_vector, surface_normal);
             var dot = Vector3.Dot(move_on_slide_plane, fall_speed_vector) <= 0;
+            
+            if (dot && slideSlowdownType != SlideSlowdownTypes.slowdown_full_speed) return;
+            
             var move_perpendicular_to_slide = Vector3.ProjectOnPlane(move_on_slide_plane, fall_speed_vector);
             var move_parallel_to_slide = Vector3.Project(move_on_slide_plane, fall_speed_vector);
 
@@ -497,12 +547,8 @@ public class  Controller4 : MonoBehaviour
                 //Slowly stopping and after slide vector magnitude drops to zero wi move at full speed
                 current_iteration_moved_vector = move_perpendicular_to_slide;
                 fall_speed_vector += move_parallel_to_slide;
-                return;
                 
-                //Develop mode that slowly stops and slowly speeds up, but do not slide if you stop movement during speed up
-                //Need to check when input stops
-                //If move parallel was greater than slide at that point - slide zeroes out
-                //Mean time slide do not changed and move just added to slide
+                return;
             }
 
 

@@ -12275,7 +12275,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1884625076}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 16.08, y: -111.68, z: -196.87}
+  m_LocalPosition: {x: 16.08, y: -116.09, z: -193.66}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -12328,11 +12328,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   updateMovementDuring: 1
   gravity: 9.81
-  airDrag: 0
-  groundFriction: 0.1345
+  airDrag: 0.15
+  groundFriction: 1
   groundSlideSpeedThreshold: 0
-  slideFriction: 0.1345
+  slideFriction: 1
   slidingTrajectoryChangeType: 1
+  slideSlowdownType: 0
   raycastMask:
     serializedVersion: 2
     m_Bits: 55
@@ -12344,8 +12345,8 @@ MonoBehaviour:
   maxStepHeight: 0.35
   minStepDepth: 0.25
   moveCastBackStepDistance: 0.1
-  obstacleSeparationDistance: 0.001
-  moveSpeed: 2
+  obstacleSeparationDistance: 0.002
+  moveSpeed: 4
   jumpStrength: 6
 --- !u!114 &1884625087
 MonoBehaviour:
