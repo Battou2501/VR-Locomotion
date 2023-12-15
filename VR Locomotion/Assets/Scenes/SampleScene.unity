@@ -12275,7 +12275,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1884625076}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 17.02, y: -41.97, z: -91.11}
+  m_LocalPosition: {x: 16.08, y: -111.68, z: -196.87}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -12321,18 +12321,17 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1884625076}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 80ef9852178e9864b9251de4657ee25e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  updateType: 1
+  updateMovementDuring: 1
   gravity: 9.81
   airDrag: 0
-  groundFriction: 0.25
+  groundFriction: 0.1345
   groundSlideSpeedThreshold: 0
-  thresholdSpeedAction: 0
-  slideFriction: 0.25
+  slideFriction: 0.1345
   slidingTrajectoryChangeType: 1
   raycastMask:
     serializedVersion: 2
