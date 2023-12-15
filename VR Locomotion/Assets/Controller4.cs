@@ -47,7 +47,7 @@ public class  Controller4 : MonoBehaviour
     [Range(0,1)]
     public float slideFriction;
 
-    [Header("How to calculate ne trajectory on collision when sliding\nParallel - new vector will only change incline\nProject - will project sliding vector to surface plane")]
+    [Header("How to calculate ne trajectory on collision when sliding\nParallel - new vector will only change incline\nProject - will project sliding vector to surface plane (Same as Unity's physics)")]
     public SlidingTrajectoryChangeTypes slidingTrajectoryChangeType;
     
     [Space(20)]
@@ -69,6 +69,7 @@ public class  Controller4 : MonoBehaviour
 
     Vector3 fall_vector;
     Vector3 fall_speed_vector;
+    float fall_speed_vector_magnitude;
 
     Transform transform_local;
     Vector3 current_position;
@@ -292,9 +293,6 @@ public class  Controller4 : MonoBehaviour
         var fall_dist_left = delta_time * fall_speed;
         var current_fall_vec = fall_speed <= Mathf.Epsilon ? vec_down : fall_speed_vector.normalized;
 
-        //Debug.Log(fall_speed);
-        
-        
         for(var i=1;i<6;i++)
         {
             
@@ -408,7 +406,6 @@ public class  Controller4 : MonoBehaviour
         var hit_dist = hit_move.distance;
 
         //Check if we hit something along the way
-        //if (!move_hit_check || hit_dist > left_move_dist + moveCastBackStepDistance + obstacleSeparationDistance) return;
         if (!move_hit_check || hit_dist > move_dist + moveCastBackStepDistance + obstacleSeparationDistance) return;
 
         move_dist = Mathf.Max(iter_num == 1? -1000 : 0, hit_dist - moveCastBackStepDistance - obstacleSeparationDistance);
@@ -433,19 +430,8 @@ public class  Controller4 : MonoBehaviour
                 throw new ArgumentOutOfRangeException();
         }
         
-        //var dot_down_1 = Vector3.Dot(vec_down, current_fall_vec);
-        //var dot_down_2 = Vector3.Dot(vec_down, new_move_vec);
-
-        //var move_dot_mult = 1f;
-
-        //if (dot_down_2 < dot_down_1)
-        //{
-            //var n = Vector3.Cross(vec_up, new_move_vec);
-            //n = Vector3.Cross(new_move_vec,n).normalized;
         var current_friction = is_sliding_incline ? slideFriction : groundFriction;
         move_dot_mult = Mathf.Max(-1,Mathf.Max(-1, Vector3.Dot(current_move_vec, new_move_vec)) - Mathf.Max(-1, Vector3.Dot(current_move_vec, -hit_norm)) * current_friction);
-        //}
-        
     }
     
     
@@ -472,15 +458,12 @@ public class  Controller4 : MonoBehaviour
         var current_move_vec = move_surface_dot >= 0 ? move_vec : current_move_vec_flat;
         var current_surface_normal = surface_normal;
         var is_avoiding_obstacle = false;
-        // iterations = 0;
         var iterations_obstacle = 0;
         var move_dot_mult = 1f;
         
         for(var i=1;i<6;i++)
         {
             if(move_dist_left<=Mathf.Epsilon) break;
-            
-            //iterations += 1;
             
             if (is_avoiding_obstacle)
                 iterations_obstacle += 1;
@@ -492,6 +475,10 @@ public class  Controller4 : MonoBehaviour
             var can_move = check_movement(i, move_vec, current_move_vec, current_surface_normal, move_dist_left, out var new_move_vec, out var move_dist, out var new_surface_normal, out var will_avoid_obstacle, out var obstacle_dot);
 
             //current_position += move_dist * move_dot_mult * (1f - Mathf.Clamp01(Vector3.Dot(fall_speed_vector, current_move_vec))) * current_move_vec;
+
+            if (is_grounded && fall_speed_vector_magnitude > 0.01f)
+                current_move_vec = correct_move_with_slide();
+            
             current_position += move_dist * move_dot_mult * current_move_vec;
 
             update_capsule_points();
@@ -510,6 +497,18 @@ public class  Controller4 : MonoBehaviour
         }
 
         //--------------------------------------------------------------------------------------------------------------
+        
+        
+        
+        Vector3 correct_move_with_slide()
+        {
+            var project_move_to_slide_up_plane = Vector3.ProjectOnPlane(current_move_vec, surface_normal);
+            var project_move_to_slide_plane = Vector3.ProjectOnPlane(project_move_to_slide_up_plane, fall_speed_vector);
+            var new_vec = Vector3.Project(project_move_to_slide_up_plane, fall_speed_vector);
+            new_vec = Vector3.ClampMagnitude(fall_speed_vector + new_vec, Mathf.Max(moveSpeed, fall_speed_vector_magnitude)) - fall_speed_vector + project_move_to_slide_plane;
+
+            return new_vec;
+        }
     }
 
     bool check_movement(int iter_num, Vector3 initial_move_vec, Vector3 current_move_vec, Vector3 current_surface_normal, float left_move_dist, out Vector3 new_move_vec, out float move_dist, out Vector3 new_surface_normal, out bool will_avoid_obstacle, out float obstacle_dot)
