@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
-public class  Controller4 : MonoBehaviour
+public class  Controller5 : MonoBehaviour
 {
     public enum UpdateTypes
     {
@@ -55,13 +55,13 @@ public class  Controller4 : MonoBehaviour
     public float colliderMinHeight;
     public float stepCheckSpheresRadius = 0.05f;
     public float maxClimbAngle = 45f;
-    public float maxStepHeight = 0.3f;
+    public float maxStepHeight = 0.35f;
     public float minStepDepth = 0.25f;
     public float moveCastBackStepDistance = 0.1f;
     public float obstacleSeparationDistance = 0.002f;
 
-    public float moveSpeed;
-    public float jumpStrength;
+    public float moveSpeed=4;
+    public float jumpStrength=6;
 
     float climb_angle_dot;
 
@@ -103,8 +103,10 @@ public class  Controller4 : MonoBehaviour
 
     bool is_sliding_incline;
 
-    bool is_moving;
+    bool is_moving_this_frame;
+    bool was_moving_last_frame;
 
+    Vector3 current_move_vector;
     Vector3 last_move_vector;
     
     
@@ -203,9 +205,12 @@ public class  Controller4 : MonoBehaviour
 
         var position_after_move = current_position;
 
+        current_move_vector = position_after_move - position_before_move;
+        
         handle_gravity();
 
-        last_move_vector = position_after_move - position_before_move;
+        was_moving_last_frame = is_moving_this_frame;
+        last_move_vector = current_move_vector;
         
         transform_local.position = current_position;
 
@@ -286,47 +291,72 @@ public class  Controller4 : MonoBehaviour
         
         handle_ground_check();
         
-        
-        if(is_climbing)
+        if(is_climbing || is_grounded && !is_sliding_incline && fall_speed_vector.sqrMagnitude < 0.0001f)
         {
             fall_speed_vector = vec_zero;
             return;
         }
-        
-        if(is_grounded && !is_sliding_incline && fall_speed_vector.sqrMagnitude < 0.0001f)
+
+        //EXECUTES ONLY AT THE FRAME AFTER MOVEMENT INPUT STOPS
+        //correct slide if needed when movement input stops
+        if (is_grounded && slideSlowdownType == SlideSlowdownTypes.slowdown_speedup && was_moving_last_frame && !is_moving_this_frame)
         {
-            fall_speed_vector = vec_zero;
-            return;
-        }
-        
-        //correct slide due to movement
-        if (slideSlowdownType == SlideSlowdownTypes.slowdown_speedup && !is_moving && is_grounded && last_move_vector.magnitude > 0.0001f)
-        {
-            
             var move_on_slide_plane = Vector3.ProjectOnPlane(last_move_vector, surface_normal);
             var dot = Vector3.Dot(move_on_slide_plane, fall_speed_vector) <= 0;
             var move_parallel_to_slide = Vector3.Project(move_on_slide_plane, fall_speed_vector);
-
-            //If movement vector is at least partially in the opposite direction to slide
+            
+            //If movement vector was at least partially in the opposite direction to slide
             if (dot)
             {
-                if (move_parallel_to_slide.magnitude > fall_speed_vector_magnitude * delta_time)
+                //if movement speed along slide vector was already greater than slide speed (we were accelerating in opposite direction from slide) than stop
+                if (move_parallel_to_slide.sqrMagnitude > fall_speed_vector_magnitude * delta_time * fall_speed_vector_magnitude * delta_time)
+                {
+                    fall_speed_vector = vec_zero;
+                    fall_speed_vector_magnitude = 0f;
+                    return;
+                }
+        
+                //if movement speed along slide vector was lower than slide speed (we were decelerating in the direction of slide) than slide with new slide speed due to deceleration
+                fall_speed_vector += move_parallel_to_slide * one_over_delta_time;
+            }
+            //If movement input vector was in the same direction as slide and is greater along slide vector than the slide vector
+            else if (fall_speed_vector.sqrMagnitude < (move_parallel_to_slide * one_over_delta_time).sqrMagnitude)
+            {
+                //Stops is is on incline smaller that max climb angle
+                if (!is_sliding_incline)
                 {
                     fall_speed_vector = vec_zero;
                     fall_speed_vector_magnitude = 0f;
                     return;
                 }
 
-                fall_speed_vector += move_parallel_to_slide * one_over_delta_time;
+                //Continue sliding with last movement input speed along slide vector is is on incline greater than max climb angle
+                fall_speed_vector = fall_speed_vector.normalized * move_parallel_to_slide.magnitude;
             }
-            
         }
-        
-        
+
+
         var fall_speed = fall_speed_vector.magnitude;
-        var fall_dist_left = delta_time * fall_speed;
+        var fall_dist_left = fall_speed * delta_time;
         var current_fall_vec = fall_speed <= Mathf.Epsilon ? vec_down : fall_speed_vector.normalized;
 
+        //EXECUTES EVERY FRAME THAT THERE IS MOVEMENT INPUT
+        //prevent sliding speed increase from movement input when sliding speed already greater than movement input along sliding vector
+        if (is_grounded && is_moving_this_frame)
+        {
+            var move_on_slide_plane = Vector3.ProjectOnPlane(current_move_vector, surface_normal);
+            var dot = Vector3.Dot(move_on_slide_plane.normalized, fall_speed_vector);
+
+            if (dot > 0)
+            {
+                var move_parallel_to_slide = Vector3.Project(move_on_slide_plane, fall_speed_vector);
+
+                fall_dist_left = Mathf.Max(0, fall_dist_left - move_parallel_to_slide.magnitude);
+            }
+        }
+        
+        //Debug.Log(fall_speed_vector.magnitude +"    " + (fall_dist_left*one_over_delta_time + current_move_vector.magnitude*one_over_delta_time));
+        
         for(var i=1;i<6;i++)
         {
             
@@ -464,11 +494,11 @@ public class  Controller4 : MonoBehaviour
         //MOVEMENT
         //--------------------------------------------------------------------------------------------------------------
 
-        is_moving = false;
+        is_moving_this_frame = false;
         
         if(move_vec.sqrMagnitude< 0.01f) return;
 
-        is_moving = true;
+        is_moving_this_frame = true;
         
         is_climbing = false;
 
@@ -489,8 +519,6 @@ public class  Controller4 : MonoBehaviour
         var iterations_obstacle = 0;
         var move_dot_mult = 1f;
 
-        Vector3 current_iteration_moved_vector;
-
         for(var i=1;i<6;i++)
         {
             if(move_dist_left<=Mathf.Epsilon) break;
@@ -504,14 +532,7 @@ public class  Controller4 : MonoBehaviour
             
             var can_move = check_movement(i, move_vec, current_move_normalized_vec, current_surface_normal, move_dist_left, out var new_move_vec, out var move_dist, out var new_surface_normal, out var will_avoid_obstacle, out var obstacle_dot);
 
-            
-            current_iteration_moved_vector = move_dist * move_dot_mult * current_move_normalized_vec;
-            if (is_grounded && fall_speed_vector_magnitude > 0.0001f)
-            {
-                correct_move_with_slide();
-            }
-            
-            current_position += current_iteration_moved_vector;
+            current_position += move_dist * move_dot_mult * current_move_normalized_vec;
 
             update_capsule_points();
 
@@ -529,35 +550,6 @@ public class  Controller4 : MonoBehaviour
         }
 
         //--------------------------------------------------------------------------------------------------------------
-        
-        
-        
-        void correct_move_with_slide()
-        {
-            var move_on_slide_plane = Vector3.ProjectOnPlane(current_iteration_moved_vector, surface_normal);
-            var dot = Vector3.Dot(move_on_slide_plane, fall_speed_vector) <= 0;
-            
-            if (dot && slideSlowdownType != SlideSlowdownTypes.slowdown_full_speed) return;
-            
-            var move_perpendicular_to_slide = Vector3.ProjectOnPlane(move_on_slide_plane, fall_speed_vector);
-            var move_parallel_to_slide = Vector3.Project(move_on_slide_plane, fall_speed_vector);
-
-            //If movement vector is at least partially in the opposite direction to slide
-            if (dot)
-            {
-                //Slowly stopping and after slide vector magnitude drops to zero wi move at full speed
-                current_iteration_moved_vector = move_perpendicular_to_slide;
-                fall_speed_vector += move_parallel_to_slide;
-                
-                return;
-            }
-
-
-            //If movement vector is at least partially in the same direction as slide
-            var parallel_greater_than_slide = move_parallel_to_slide.sqrMagnitude > fall_speed_vector_magnitude * fall_speed_vector_magnitude * delta_time * delta_time;
-            current_iteration_moved_vector = move_perpendicular_to_slide + (parallel_greater_than_slide ? move_parallel_to_slide : vec_zero);
-            fall_speed_vector = parallel_greater_than_slide ? vec_zero : fall_speed_vector;
-        }
     }
 
     bool check_movement(int iter_num, Vector3 initial_move_vec, Vector3 current_move_vec, Vector3 current_surface_normal, float left_move_dist, out Vector3 new_move_vec, out float move_dist, out Vector3 new_surface_normal, out bool will_avoid_obstacle, out float obstacle_dot)
@@ -575,8 +567,6 @@ public class  Controller4 : MonoBehaviour
         var move_hit_check = Physics.CapsuleCast(
             capsule_bottom_point + move_back_offset,
             capsule_top_point + move_back_offset,
-            //collider_radius - (iter_num == 1 ? 0 : 0.001f),
-            //collider_radius - 0.001f,
             collider_radius,
             current_move_vec,
             out var hit_move,
@@ -633,7 +623,6 @@ public class  Controller4 : MonoBehaviour
         }
 
         move_dist = Mathf.Max(iter_num == 1 ? -100 : 0,hit_dist - moveCastBackStepDistance - obstacleSeparationDistance);
-        //move_dist = Mathf.Max(0,hit_dist - moveCastBackStepDistance - 0.00f);
 
         return true;
 

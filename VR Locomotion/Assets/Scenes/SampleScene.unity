@@ -12256,7 +12256,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1884625081}
-  - component: {fileID: 1884625086}
+  - component: {fileID: 1884625088}
   - component: {fileID: 1884625087}
   - component: {fileID: 1884625082}
   - component: {fileID: 1884625083}
@@ -12275,7 +12275,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1884625076}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 16.08, y: -116.09, z: -193.66}
+  m_LocalPosition: {x: 17, y: -112.61, z: -198}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -12314,40 +12314,6 @@ CapsuleCollider:
   m_Height: 2.08
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1884625086
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1884625076}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 80ef9852178e9864b9251de4657ee25e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  updateMovementDuring: 1
-  gravity: 9.81
-  airDrag: 0.15
-  groundFriction: 1
-  groundSlideSpeedThreshold: 0
-  slideFriction: 1
-  slidingTrajectoryChangeType: 1
-  slideSlowdownType: 0
-  raycastMask:
-    serializedVersion: 2
-    m_Bits: 55
-  colliderRadius: 0.34
-  colliderHeight: 2.08
-  colliderMinHeight: 1
-  stepCheckSpheresRadius: 0.05
-  maxClimbAngle: 45
-  maxStepHeight: 0.35
-  minStepDepth: 0.25
-  moveCastBackStepDistance: 0.1
-  obstacleSeparationDistance: 0.002
-  moveSpeed: 4
-  jumpStrength: 6
 --- !u!114 &1884625087
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12362,6 +12328,40 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   obj1: {fileID: 1275778952}
   obj2: {fileID: 384859832}
+--- !u!114 &1884625088
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1884625076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 968a302ffb35d1442937fac6f05360c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  updateMovementDuring: 1
+  gravity: 9.81
+  airDrag: 0.1
+  groundFriction: 0.13
+  groundSlideSpeedThreshold: 0
+  slideFriction: 0.13
+  slidingTrajectoryChangeType: 0
+  slideSlowdownType: 0
+  raycastMask:
+    serializedVersion: 2
+    m_Bits: 55
+  colliderRadius: 0.34
+  colliderHeight: 2.08
+  colliderMinHeight: 0
+  stepCheckSpheresRadius: 0.05
+  maxClimbAngle: 45
+  maxStepHeight: 0.35
+  minStepDepth: 0.25
+  moveCastBackStepDistance: 0.1
+  obstacleSeparationDistance: 0.002
+  moveSpeed: 2
+  jumpStrength: 6
 --- !u!1 &1905866413
 GameObject:
   m_ObjectHideFlags: 0
