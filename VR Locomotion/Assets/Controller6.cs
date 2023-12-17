@@ -47,6 +47,9 @@ public class  Controller6 : MonoBehaviour
     public SlidingTrajectoryChangeTypes slidingTrajectoryChangeType;
 
     public SlideSlowdownTypes slideSlowdownType;
+
+    [Header("Do not accelerate down slope due to gravity on inclines smaller than max climb angle")]
+    public bool doNotAccelerateDueToGravityOnClimbableIncline;
     
     [Space(20)]
     public LayerMask raycastMask;
@@ -273,6 +276,10 @@ public class  Controller6 : MonoBehaviour
             surface_normal = ground_hit.normal;
             fall_vector = Vector3.ProjectOnPlane(vec_down, ground_hit.normal);//.normalized;
             is_sliding_incline = Vector3.Dot(vec_up, surface_normal) < climb_angle_dot;
+            var d = Mathf.Min(0, ground_hit.distance - (ground_height_check_val + obstacleSeparationDistance * 3));
+            
+            if(!is_climbing && d<-0.001f)
+                current_position += d * vec_down;
             
             //when landed from in air state
             if (is_grounded) return;
@@ -434,7 +441,8 @@ public class  Controller6 : MonoBehaviour
         
         //applying acceleration, drag and friction
         //--------------------------------------------------------------------------------------------------------------
-        fall_speed_vector += accel * fall_vector;
+        if(!is_grounded || is_sliding_incline || !doNotAccelerateDueToGravityOnClimbableIncline)
+            fall_speed_vector += accel * fall_vector;
         fall_speed_vector *= drag;
         fall_speed_vector -= friction * fall_speed_vector_normalized;
         fall_speed_vector_magnitude = fall_speed_vector.magnitude;
@@ -546,7 +554,8 @@ public class  Controller6 : MonoBehaviour
             move_dot_mult = obstacle_dot;
             current_surface_normal = new_surface_normal;
             current_move_normalized_vec = new_move_vec;
-            move_dist_left -= Mathf.Max(0,move_dist);
+            //move_dist_left -= Mathf.Max(0,move_dist);
+            move_dist_left -= move_dist;
             is_avoiding_obstacle = will_avoid_obstacle;
             
             if(move_dist_left<=Mathf.Epsilon) break;
@@ -570,7 +579,7 @@ public class  Controller6 : MonoBehaviour
         var move_back_offset = -moveCastBackStepDistance * current_move_vec;
 
         var move_hit_check = Physics.CapsuleCast(
-            capsule_bottom_point + move_back_offset + 0.002f*vec_up,
+            capsule_bottom_point + move_back_offset + 0.001f*vec_up,
             capsule_top_point + move_back_offset,
             collider_radius + 0.02f,// -(iter_num == 1 ? 0 : 0.001f),
             current_move_vec,

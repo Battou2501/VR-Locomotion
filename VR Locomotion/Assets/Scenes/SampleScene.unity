@@ -12361,8 +12361,8 @@ MonoBehaviour:
   maxStepHeight: 0.35
   minStepDepth: 0.25
   moveCastBackStepDistance: 0.1
-  obstacleSeparationDistance: 0.002
-  moveSpeed: 0.2
+  obstacleSeparationDistance: 0
+  moveSpeed: 3
   jumpStrength: 6
 --- !u!4 &1779502607
 Transform:
@@ -12372,7 +12372,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1779502602}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -51.594, y: 0.99, z: -17.62}
+  m_LocalPosition: {x: 15.61, y: -52.2, z: -110.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

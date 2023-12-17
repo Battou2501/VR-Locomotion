@@ -274,6 +274,8 @@ public class  Controller5 : MonoBehaviour
             fall_vector = Vector3.ProjectOnPlane(vec_down, ground_hit.normal);//.normalized;
             is_sliding_incline = Vector3.Dot(vec_up, surface_normal) < climb_angle_dot;
             
+            
+            
             //when landed from in air state
             if (is_grounded) return;
             
