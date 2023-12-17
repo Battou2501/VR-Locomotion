@@ -19,7 +19,8 @@ namespace DefaultNamespace
 
         void FixedUpdate()
         {
-            Debug.Log(rb.velocity.magnitude);
+            //Debug.Log(rb.velocity.magnitude);
+            rb.MovePosition(transform.position - transform.forward*0.005f*Time.fixedDeltaTime);
             //Debug.Log((rb.velocity.magnitude-s)/Time.fixedDeltaTime);
             //Debug.Log((rb.velocity.y-s)/Time.fixedDeltaTime);
             //s = rb.velocity.y;
