@@ -260,7 +260,7 @@ public class  Controller6 : MonoBehaviour
 
         hit = hit_ground;
 
-        return ground_collision_check && hit_ground.distance <= ground_height_check_val + (is_grounded ? 0.04f : 0.002f);//Consider adding extra clearance only when grounded (is_grounded ? 4 : 1);
+        return ground_collision_check && hit_ground.distance <= ground_height_check_val + (is_grounded ? 0.02f : 0.002f);//Consider adding extra clearance only when grounded (is_grounded ? 4 : 1);
     }
     
     void handle_ground_check()
