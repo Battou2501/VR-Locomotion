@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControllerSample", "ControllerSample.csproj", "{83841289-0acc-c05b-37f5-e563fc2b3113}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{cfe26715-6847-0804-e44e-3709c8af3635}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControllerSample", "ControllerSample.csproj", "{83841289-0acc-c05b-37f5-e563fc2b3113}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.XR.Management.Samples", "Unity.XR.Management.Samples.csproj", "{d58669ff-87e0-aea5-6c7f-826a0d027f39}"
 EndProject
@@ -14,10 +14,10 @@ Global
 		Debug|Any CPU = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{83841289-0acc-c05b-37f5-e563fc2b3113}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{83841289-0acc-c05b-37f5-e563fc2b3113}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{cfe26715-6847-0804-e44e-3709c8af3635}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{cfe26715-6847-0804-e44e-3709c8af3635}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83841289-0acc-c05b-37f5-e563fc2b3113}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83841289-0acc-c05b-37f5-e563fc2b3113}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{d58669ff-87e0-aea5-6c7f-826a0d027f39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{d58669ff-87e0-aea5-6c7f-826a0d027f39}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4dc7b6ab-19dc-e9c6-6d91-472872514571}.Debug|Any CPU.ActiveCfg = Debug|Any CPU

@@ -300,11 +300,11 @@ public class  Controller6 : MonoBehaviour
         
         
         
-        if(is_climbing || is_grounded && !is_sliding_incline && fall_speed_vector.sqrMagnitude < 0.0001f)
-        {
-            fall_speed_vector = vec_zero;
-            return;
-        }
+        //if(is_climbing || is_grounded && !is_sliding_incline && fall_speed_vector.sqrMagnitude < 0.0001f)
+        //{
+        //    fall_speed_vector = vec_zero;
+        //    return;
+        //}
         
         //EXECUTES ONLY AT THE FRAME AFTER MOVEMENT INPUT STOPS
         //correct slide if needed when movement input stops
@@ -340,7 +340,8 @@ public class  Controller6 : MonoBehaviour
                 }
         
                 //Continue sliding with last movement input speed along slide vector is is on incline greater than max climb angle
-                fall_speed_vector = fall_speed_vector.normalized * move_parallel_to_slide.magnitude;
+                //fall_speed_vector = fall_speed_vector.normalized * move_parallel_to_slide.magnitude;
+                fall_speed_vector = move_parallel_to_slide;
             }
         }
 
@@ -356,11 +357,19 @@ public class  Controller6 : MonoBehaviour
             var move_on_slide_plane = Vector3.ProjectOnPlane(current_move_vector, surface_normal);
             var dot = Vector3.Dot(move_on_slide_plane, fall_speed_vector);
         
+            var move_parallel_to_slide = Vector3.Project(move_on_slide_plane, fall_speed_vector);
+            var move_parallel_magnitude = move_parallel_to_slide.magnitude;
+            
             if (dot > 0)
             {
-                var move_parallel_to_slide = Vector3.Project(move_on_slide_plane, fall_speed_vector);
-        
-                fall_dist_left = Mathf.Max(0, fall_dist_left - move_parallel_to_slide.magnitude);
+                fall_dist_left = Mathf.Max(0, fall_dist_left - move_parallel_magnitude);
+            }
+            else
+            {
+                if (!was_moving_last_frame)
+                    fall_speed += move_parallel_magnitude * one_over_delta_time;
+                
+                fall_speed -= Mathf.Min(fall_speed, move_parallel_magnitude);
             }
         }
         
@@ -449,7 +458,7 @@ public class  Controller6 : MonoBehaviour
         //--------------------------------------------------------------------------------------------------------------
 
         
-        Debug.Log(fall_speed_vector_magnitude);
+        //Debug.Log(fall_speed_vector_magnitude);
     }
     
     void check_fall_movement(int iter_num, Vector3 current_move_vec, float left_move_dist, out Vector3 new_move_vec, out float move_dist, out float move_dot_mult)

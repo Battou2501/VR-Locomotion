@@ -1634,6 +1634,7 @@ MonoBehaviour:
   slideFriction: 0.5
   slidingTrajectoryChangeType: 0
   slideSlowdownType: 0
+  doNotAccelerateDueToGravityOnClimbableIncline: 0
   raycastMask:
     serializedVersion: 2
     m_Bits: 55
@@ -12345,11 +12346,12 @@ MonoBehaviour:
   updateMovementDuring: 1
   gravity: 9.81
   airDrag: 0.1
-  groundFriction: 0.5
+  groundFriction: 0.3
   groundSlideSpeedThreshold: 0
-  slideFriction: 0.5
+  slideFriction: 0.3
   slidingTrajectoryChangeType: 0
   slideSlowdownType: 0
+  doNotAccelerateDueToGravityOnClimbableIncline: 0
   raycastMask:
     serializedVersion: 2
     m_Bits: 55
@@ -12362,7 +12364,7 @@ MonoBehaviour:
   minStepDepth: 0.25
   moveCastBackStepDistance: 0.1
   obstacleSeparationDistance: 0
-  moveSpeed: 3
+  moveSpeed: 4
   jumpStrength: 6
 --- !u!4 &1779502607
 Transform:
@@ -12372,7 +12374,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1779502602}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 15.61, y: -52.2, z: -110.5}
+  m_LocalPosition: {x: 15.61, y: -57, z: -110.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
