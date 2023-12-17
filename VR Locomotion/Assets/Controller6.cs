@@ -347,6 +347,22 @@ public class  Controller6 : MonoBehaviour
             }
         }
 
+        if (is_grounded && !was_moving_last_frame && is_moving_this_frame)
+        {
+            var move_on_slide_plane = Vector3.ProjectOnPlane(current_move_vector, surface_normal);
+            var dot = Vector3.Dot(move_on_slide_plane, fall_speed_vector);
+
+            if (dot > 0)
+            {
+
+                var move_parallel_to_slide = Vector3.Project(move_on_slide_plane, fall_speed_vector);
+                var move_parallel_magnitude = move_parallel_to_slide.magnitude;
+
+                fall_speed_vector = fall_speed_vector.normalized * Mathf.Max(0, fall_speed_vector.magnitude - move_parallel_magnitude);
+                
+            }
+        }
+
 
         var fall_speed = fall_speed_vector.magnitude;
         var fall_dist_left = fall_speed * delta_time;
@@ -462,7 +478,7 @@ public class  Controller6 : MonoBehaviour
         //--------------------------------------------------------------------------------------------------------------
 
         
-        //Debug.Log(fall_speed_vector_magnitude);
+        Debug.Log(fall_speed_vector_magnitude);
     }
     
     void check_fall_movement(int iter_num, Vector3 current_move_vec, float left_move_dist, out Vector3 new_move_vec, out float move_dist, out float move_dot_mult)
