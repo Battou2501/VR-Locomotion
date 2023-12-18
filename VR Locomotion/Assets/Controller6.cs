@@ -707,8 +707,9 @@ public class  Controller6 : MonoBehaviour
 
             bool check_step_capsule()
             {
+                var bottom_point = capsule_bottom_point + move_back_offset + maxStepHeight * vec_up;
                 var step_hit_check = Physics.CapsuleCast(
-                    capsule_bottom_point + move_back_offset + maxStepHeight * vec_up,
+                    bottom_point,
                     capsule_top_point + move_back_offset,
                     collider_radius,
                     current_move_vec_flat,
@@ -716,7 +717,17 @@ public class  Controller6 : MonoBehaviour
                     2,
                     raycastMask);
 
-                return !step_hit_check || hit_step.distance - moveCastBackStepDistance > minStepDepth;
+                if (!step_hit_check) return true;
+                
+                //var hit_vector = bottom_point + current_move_vec_flat * hit_step.distance - (capsule_bottom_point);
+                //hit_vector = hit_vector.normalized;
+                //var hit_dot = Vector3.Dot(vec_up, hit_vector);
+                //var a = Vector3.Angle(vec_up, hit_vector);
+                //Debug.DrawRay(capsule_bottom_point, bottom_point + current_move_vec_flat * (hit_step.distance) - capsule_bottom_point, Color.red);
+                //DebugExtension.DebugWireSphere(capsule_bottom_point+ bottom_point + current_move_vec_flat * (hit_step.distance)- (capsule_bottom_point), collider_radius);
+                
+                return hit_step.distance - moveCastBackStepDistance > minStepDepth;
+                //return hit_dot >= climb_angle_dot;
             }
 
             bool check_step_spheres(Vector3 offset)
@@ -734,6 +745,14 @@ public class  Controller6 : MonoBehaviour
                 var v1 = !step_hit_check_high;
                 if (v1) return true;
 
+                //var hit_vector = (high_sphere_pos + current_move_vec_flat * hit_step_high.distance)
+                //                 - (current_position - (collider_height * 0.5f - stepCheckSpheresRadius) * vec_up + offset );
+                //hit_vector = hit_vector.normalized;
+                //var hit_dot = Vector3.Dot(vec_up, hit_vector);
+                //
+                //Debug.DrawRay((current_position - (collider_height * 0.5f - stepCheckSpheresRadius) * vec_up + offset), hit_vector, Color.red);
+                //DebugExtension.DebugWireSphere(high_sphere_pos + current_move_vec_flat * hit_step_high.distance, stepCheckSpheresRadius);
+                
                 var step_high_dist_check = hit_step_high.distance - collider_radius - moveCastBackStepDistance > minStepDepth;
                 return step_high_dist_check;
             }
