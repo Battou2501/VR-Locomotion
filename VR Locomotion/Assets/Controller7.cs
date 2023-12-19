@@ -726,29 +726,31 @@ public class  Controller7 : MonoBehaviour
                     collider_radius,
                     current_move_vec_flat,
                     out var hit_step,
-                    //minStepDepth + moveCastBackStepDistance + collider_radius,
                     calculated_step_depth + moveCastBackStepDistance + collider_radius,
                     raycastMask);
+
+                if (!step_hit_check) return true;
 
                 var hit_vector = (hit_step.point - hit_move.point).normalized;
                 
                 var hit_dot = Vector3.Dot(vec_up, hit_vector);
 
-                var can_step = hit_step.distance > minStepDepth + moveCastBackStepDistance + collider_radius;
+                if (hit_dot <= climb_angle_sin) return true;
 
-                
-                var result = !step_hit_check || hit_dot <= climb_angle_sin;
+                var cast_down_check = Physics.SphereCast(
+                    capsule_bottom_point + maxStepHeight * vec_up + (collider_radius + minStepDepth) * current_move_vec_flat,
+                    collider_radius,
+                    vec_down,
+                    out var cast_down_hit,
+                    colliderHeight,
+                    raycastMask
+                );
 
-                if (result)
-                {
-                    
-                }
-                else
-                {
-                    
-                }
+                if (!cast_down_check) return true;
                 
-                return result;
+                var cast_down_hit_dot = Vector3.Dot(vec_up, cast_down_hit.normal);
+                
+                return cast_down_hit_dot >= climb_angle_cos;
             }
             
             bool check_step_spheres(Vector3 offset)
