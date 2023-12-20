@@ -549,7 +549,6 @@ public class  Controller7 : MonoBehaviour
         var ms = moveSpeed;
         
         //Limit movement to not accelerate sliding down hill if it is already faster than move
-        //if (is_grounded && fall_speed_vector_magnitude > 0.001f && Vector3.Dot(move_vec, fall_speed_vector) > 0)
         if (is_grounded && fall_speed_vector.sqrMagnitude > 0.0001f && Vector3.Dot(move_vec, fall_speed_vector) > 0)
         {
             var m2 = move_vec * moveSpeed;
