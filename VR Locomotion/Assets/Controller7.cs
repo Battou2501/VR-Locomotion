@@ -309,11 +309,11 @@ public class  Controller7 : MonoBehaviour
         
         handle_ground_check();
         
-       if(is_climbing || is_grounded && !is_sliding_incline && doNotAccelerateDueToGravityOnClimbableIncline && fall_speed_vector.sqrMagnitude < 0.0001f)
-       {
-           fall_speed_vector = vec_zero;
-           return;
-       }
+        if(is_climbing || is_grounded && !is_sliding_incline && doNotAccelerateDueToGravityOnClimbableIncline && fall_speed_vector.sqrMagnitude < 0.0001f)
+        {
+            fall_speed_vector = vec_zero;
+            return;
+        }
         
         //EXECUTES ONLY AT THE FRAME AFTER MOVEMENT INPUT STOPS
         //correct slide if needed when movement input stops
@@ -321,7 +321,7 @@ public class  Controller7 : MonoBehaviour
         {
             var move_on_slide_plane = Vector3.ProjectOnPlane(last_frame_move_vector, surface_normal);
             var dot = Vector3.Dot(move_on_slide_plane, fall_speed_vector) <= 0;
-            var move_parallel_to_slide = Vector3.Project(move_on_slide_plane, fall_speed_vector) * one_over_delta_time;
+            var move_parallel_to_slide = one_over_delta_time * Vector3.Project(move_on_slide_plane, fall_speed_vector);
 
             var fall_speed_lower_than_parallel_move = fall_speed_vector.sqrMagnitude < move_parallel_to_slide.sqrMagnitude;
             
@@ -362,7 +362,7 @@ public class  Controller7 : MonoBehaviour
             
             if (dot <= 0)
             {
-                var move_parallel_to_slide = Vector3.Project(current_frame_move_vector* one_over_delta_time, fall_speed_vector);
+                var move_parallel_to_slide = Vector3.Project(one_over_delta_time * current_frame_move_vector, fall_speed_vector);
                 
                 if (!was_moving_last_frame)
                 {
@@ -381,9 +381,7 @@ public class  Controller7 : MonoBehaviour
         var current_fall_vec = fall_speed <= Mathf.Epsilon ? is_grounded ? fall_vector.normalized : vec_down : fall_speed_vector.normalized;
 
         Debug.Log(fall_speed);
-        
-        //Debug.Log(fall_speed_vector.magnitude +"    " + (fall_dist_left*one_over_delta_time + current_move_vector.magnitude*one_over_delta_time));
-        
+
         for(var i=1;i<6;i++)
         {
             
@@ -457,10 +455,15 @@ public class  Controller7 : MonoBehaviour
         
         //applying acceleration, drag and friction
         //--------------------------------------------------------------------------------------------------------------
+        
+        //acceleration
         if(!is_grounded || is_sliding_incline || !doNotAccelerateDueToGravityOnClimbableIncline)
             fall_speed_vector += accel * fall_vector;
+        
+        //drag
         fall_speed_vector *= drag;
 
+        //friction
         if (fall_speed_vector.sqrMagnitude < friction * friction)
         {
             fall_speed_vector = vec_zero;
@@ -472,9 +475,6 @@ public class  Controller7 : MonoBehaviour
         }
 
         //--------------------------------------------------------------------------------------------------------------
-
-        
-        //Debug.Log(fall_speed_vector_magnitude);
     }
     
     void check_fall_movement(int iter_num, Vector3 current_move_vec, float left_move_dist, out Vector3 new_move_vec, out float move_dist, out float move_dot_mult)
