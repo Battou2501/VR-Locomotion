@@ -72,7 +72,6 @@ public class  Controller7 : MonoBehaviour
 
     Vector3 fall_vector;
     Vector3 fall_speed_vector;
-    float fall_speed_vector_magnitude;
 
     Transform transform_local;
     Vector3 current_position;
@@ -319,8 +318,6 @@ public class  Controller7 : MonoBehaviour
         
         handle_ground_check();
         
-        
-        
        if(is_climbing || is_grounded && !is_sliding_incline && doNotAccelerateDueToGravityOnClimbableIncline && fall_speed_vector.sqrMagnitude < 0.0001f)
        {
            fall_speed_vector = vec_zero;
@@ -333,43 +330,37 @@ public class  Controller7 : MonoBehaviour
         {
             var move_on_slide_plane = Vector3.ProjectOnPlane(last_frame_move_vector, surface_normal);
             var dot = Vector3.Dot(move_on_slide_plane, fall_speed_vector) <= 0;
-            var move_parallel_to_slide = Vector3.Project(move_on_slide_plane, fall_speed_vector);
+            var move_parallel_to_slide = Vector3.Project(move_on_slide_plane, fall_speed_vector) * one_over_delta_time;
+
+            var fall_speed_lower_than_parallel_move = fall_speed_vector.sqrMagnitude < move_parallel_to_slide.sqrMagnitude;
             
             //If movement vector was at least partially in the opposite direction to slide
             if (dot)
             {
                 //if movement speed along slide vector was already greater than slide speed (we were accelerating in opposite direction from slide) than stop
-                if (move_parallel_to_slide.sqrMagnitude > fall_speed_vector_magnitude * delta_time * fall_speed_vector_magnitude * delta_time)
+                if (fall_speed_lower_than_parallel_move)
                 {
                     fall_speed_vector = vec_zero;
-                    fall_speed_vector_magnitude = 0f;
                     return;
                 }
         
                 //if movement speed along slide vector was lower than slide speed (we were decelerating in the direction of slide) than slide with new slide speed due to deceleration
-                fall_speed_vector += move_parallel_to_slide * one_over_delta_time;
+                fall_speed_vector += move_parallel_to_slide;
             }
             //If movement input vector was in the same direction as slide and is greater along slide vector than the slide vector
-            else if (fall_speed_vector.sqrMagnitude < (move_parallel_to_slide * one_over_delta_time).sqrMagnitude)
+            else if (fall_speed_lower_than_parallel_move)
             {
                 //Stops is is on incline smaller that max climb angle
-                if (!is_sliding_incline && doNotAccelerateDueToGravityOnClimbableIncline)
+                if (is_grounded && !is_sliding_incline && (doNotAccelerateDueToGravityOnClimbableIncline || fall_speed_vector.sqrMagnitude < 0.0001f))
                 {
                     fall_speed_vector = vec_zero;
-                    fall_speed_vector_magnitude = 0f;
                     return;
                 }
         
                 //Continue sliding with last movement input speed along slide vector is is on incline greater than max climb angle
-                //fall_speed_vector = fall_speed_vector.normalized * move_parallel_to_slide.magnitude;
-                fall_speed_vector += move_parallel_to_slide * one_over_delta_time;
+                fall_speed_vector += move_parallel_to_slide;
             }
         }
-
-
-        var fall_speed = fall_speed_vector.magnitude;
-        var fall_dist_left = fall_speed * delta_time;
-        var current_fall_vec = fall_speed <= Mathf.Epsilon ? is_grounded ? fall_vector.normalized : vec_down : fall_speed_vector.normalized;
 
         //EXECUTES EVERY FRAME THAT THERE IS MOVEMENT INPUT
         //slows down sliding and eventually speed up in opposite direction
@@ -377,22 +368,27 @@ public class  Controller7 : MonoBehaviour
         {
             var move_on_slide_plane = Vector3.ProjectOnPlane(current_frame_move_vector, surface_normal);
             var dot = Vector3.Dot(move_on_slide_plane, fall_speed_vector);
-        
-            var move_parallel_to_slide = Vector3.Project(current_frame_move_vector* one_over_delta_time, fall_speed_vector);
-            var move_parallel_magnitude = move_parallel_to_slide.magnitude;
             
             if (dot <= 0)
             {
+                var move_parallel_to_slide = Vector3.Project(current_frame_move_vector* one_over_delta_time, fall_speed_vector);
+                
                 if (!was_moving_last_frame)
                 {
-                    fall_speed += move_parallel_magnitude;
-                    fall_dist_left += move_parallel_magnitude * delta_time;
+                    fall_speed_vector -= move_parallel_to_slide;
                 }
+
+                var is_fall_speed_lower_than_move_vector = (move_parallel_to_slide * delta_time).sqrMagnitude > fall_speed_vector.sqrMagnitude;
                 
-                fall_speed -= Mathf.Min(fall_speed, move_parallel_magnitude * delta_time);
+                fall_speed_vector -= is_fall_speed_lower_than_move_vector ? fall_speed_vector : -move_parallel_to_slide * delta_time;
             }
         }
         
+
+        var fall_speed = fall_speed_vector.magnitude;
+        var fall_dist_left = fall_speed * delta_time;
+        var current_fall_vec = fall_speed <= Mathf.Epsilon ? is_grounded ? fall_vector.normalized : vec_down : fall_speed_vector.normalized;
+
         Debug.Log(fall_speed);
         
         //Debug.Log(fall_speed_vector.magnitude +"    " + (fall_dist_left*one_over_delta_time + current_move_vector.magnitude*one_over_delta_time));
@@ -470,12 +466,19 @@ public class  Controller7 : MonoBehaviour
         
         //applying acceleration, drag and friction
         //--------------------------------------------------------------------------------------------------------------
-        //if(!is_grounded || is_sliding_incline || !doNotAccelerateDueToGravityOnClimbableIncline)
+        if(!is_grounded || is_sliding_incline || !doNotAccelerateDueToGravityOnClimbableIncline)
             fall_speed_vector += accel * fall_vector;
         fall_speed_vector *= drag;
-        var fall_speed_vector_normalized = fall_speed_vector.normalized;
-        fall_speed_vector -= Mathf.Min(fall_speed_vector.magnitude, friction) * fall_speed_vector_normalized;
-        fall_speed_vector_magnitude = fall_speed_vector.magnitude;
+
+        if (fall_speed_vector.sqrMagnitude < friction * friction)
+        {
+            fall_speed_vector = vec_zero;
+        }
+        else
+        {
+            var fall_speed_vector_normalized = fall_speed_vector.normalized;
+            fall_speed_vector -= friction * fall_speed_vector_normalized;
+        }
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -555,7 +558,8 @@ public class  Controller7 : MonoBehaviour
         var ms = moveSpeed;
         
         //Limit movement to not accelerate sliding down hill if it is already faster than move
-        if (is_grounded && fall_speed_vector_magnitude > 0.001f && Vector3.Dot(move_vec, fall_speed_vector) > 0)
+        //if (is_grounded && fall_speed_vector_magnitude > 0.001f && Vector3.Dot(move_vec, fall_speed_vector) > 0)
+        if (is_grounded && fall_speed_vector.sqrMagnitude > 0.0001f && Vector3.Dot(move_vec, fall_speed_vector) > 0)
         {
             var m2 = move_vec * moveSpeed;
             var vec = m2 - fall_speed_vector;
@@ -568,7 +572,7 @@ public class  Controller7 : MonoBehaviour
             
             move_vec = vec;
             ms = move_vec.magnitude;
-            move_vec = move_vec.normalized;
+            move_vec /= ms;
         }
         
         var move_surface_dot = Vector3.Dot(move_vec_flat, surface_normal);
@@ -699,7 +703,8 @@ public class  Controller7 : MonoBehaviour
             
             if (!check_center) return false;
             
-            var sphere_offset = (collider_radius - stepCheckSpheresRadius) * move_vec_right;
+            //var sphere_offset = (collider_radius - stepCheckSpheresRadius) * move_vec_right;
+            var sphere_offset = (collider_radius - stepCheckSpheresRadius) * move_vec_right - collider_radius * 0.5f * current_move_vec_flat;
             
             var check_right = check_step_spheres(sphere_offset);
             
@@ -720,7 +725,7 @@ public class  Controller7 : MonoBehaviour
             {
                 var bottom_point = capsule_bottom_point + maxStepHeight * vec_up;
 
-                var step_hit_check = Physics.CapsuleCast(
+                var is_capsule_hit_something = Physics.CapsuleCast(
                     bottom_point - back_offset,
                     capsule_top_point - back_offset,
                     collider_radius,
@@ -730,8 +735,14 @@ public class  Controller7 : MonoBehaviour
                     minStepDepth + moveCastBackStepDistance,
                     raycastMask
                 );
+                
+                var capsule_hit_distance_is_greater_than_min_step_depth = hit_step.distance-moveCastBackStepDistance > minStepDepth;
+                
+                if (is_capsule_hit_something && !capsule_hit_distance_is_greater_than_min_step_depth) return false;
+                
+                //var move_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle = Vector3.Dot(vec_up, (hit_step.point - hit_move.point).normalized) <= climb_angle_sin;
 
-                var cast_down_check = Physics.SphereCast(
+                var is_cast_down_hit_something = Physics.SphereCast(
                     //capsule_top_point + (minStepDepth + collider_radius * (1f - Vector3.Dot(vec_up, hit_move.normal))) * current_move_vec_flat,
                     capsule_top_point + (minStepDepth) * current_move_vec_flat,
                     collider_radius,
@@ -741,41 +752,35 @@ public class  Controller7 : MonoBehaviour
                     raycastMask
                 );
                 
-                var is_capsule_hit_something = step_hit_check;
-
-                var capsule_hit_distance_is_greater_than_min_step_depth = hit_step.distance-moveCastBackStepDistance > minStepDepth;
-                
-                //var move_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle = Vector3.Dot(vec_up, (hit_step.point - hit_move.point).normalized) <= climb_angle_sin;
-                
-                var is_cast_down_hit_something = cast_down_check;
-
                 var is_hit_lower_than_max_step_height = colliderHeight - collider_radius_x2 - cast_down_hit.distance < maxStepHeight;
 
                 var is_cast_down_hit_slope_smaller_than_max_climbable_angle = Vector3.Dot(vec_up, cast_down_hit.normal) >= climb_angle_cos;
 
                 var cast_down_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle = Vector3.Dot(vec_up, (cast_down_hit.point - hit_move.point).normalized) <= climb_angle_sin;
-
-                if (is_capsule_hit_something && !capsule_hit_distance_is_greater_than_min_step_depth) return false;
                 
                 //if (is_capsule_hit_something && !move_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle) return false;
                 
-                if (is_cast_down_hit_something && !is_hit_lower_than_max_step_height) return false;
-                
-                if (is_cast_down_hit_something && !is_cast_down_hit_slope_smaller_than_max_climbable_angle && !cast_down_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle) return false;
-                
-                return true;
+                switch (is_cast_down_hit_something)
+                {
+                    case true when !is_hit_lower_than_max_step_height:
+                    case true when !is_cast_down_hit_slope_smaller_than_max_climbable_angle && !cast_down_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle:
+                        return false;
+                    default:
+                        return true;
+                }
             }
             
             bool check_step_spheres(Vector3 offset)
             {
-                var high_sphere_pos = current_position - (collider_height * 0.5f - stepCheckSpheresRadius - maxStepHeight) * vec_up + offset - back_offset;
+                var high_sphere_pos = current_position - (collider_height * 0.5f - stepCheckSpheresRadius - maxStepHeight) * vec_up + offset;
 
                 var step_hit_check_high = Physics.SphereCast(
-                    high_sphere_pos,
+                    high_sphere_pos - back_offset,
                     stepCheckSpheresRadius,
                     current_move_vec_flat,
                     out _,
-                    minStepDepth + moveCastBackStepDistance + collider_radius,
+                    //minStepDepth + moveCastBackStepDistance + collider_radius,
+                    minStepDepth + moveCastBackStepDistance,
                     raycastMask);
 
 
