@@ -67,8 +67,8 @@ public class  Controller7 : MonoBehaviour
     public float moveSpeed=4;
     public float jumpStrength=6;
 
-    float climb_angle_cos;
-    float climb_angle_sin;
+    float climb_angle_cos_aka_vertical_dot;
+    float climb_angle_sin_aka_horizontal_dot;
 
     Vector3 fall_vector;
     Vector3 fall_speed_vector;
@@ -115,15 +115,13 @@ public class  Controller7 : MonoBehaviour
     Vector3 last_frame_move_vector;
 
     float max_slope_angle_normal;
-    float calculated_step_depth;
-
-    RaycastHit[] raycast_array_buffer = new RaycastHit[10];
+    //float calculated_step_depth;
 
     void Start()
     {
-        climb_angle_cos = Mathf.Cos(maxClimbAngle * Mathf.Deg2Rad);
-        climb_angle_sin = Mathf.Sin(maxClimbAngle * Mathf.Deg2Rad);
-        calculated_step_depth = climb_angle_cos * (maxStepHeight / climb_angle_sin);
+        climb_angle_cos_aka_vertical_dot = Mathf.Cos(maxClimbAngle * Mathf.Deg2Rad);
+        climb_angle_sin_aka_horizontal_dot = Mathf.Sin(maxClimbAngle * Mathf.Deg2Rad);
+        //calculated_step_depth = climb_angle_cos * (maxStepHeight / climb_angle_sin);
         transform_local = transform;
         collider_radius = colliderRadius;
         collider_radius_x2 = collider_radius * 2;
@@ -220,13 +218,7 @@ public class  Controller7 : MonoBehaviour
 
         current_frame_move_vector = position_after_move - position_before_move;
 
-        var c1 = current_position;
-        
         handle_gravity();
-        
-        var c2 = current_position;
-
-        var c3 = c2 - c1;
         
         was_moving_last_frame = is_moving_this_frame;
         last_frame_move_vector = current_frame_move_vector;
@@ -245,7 +237,6 @@ public class  Controller7 : MonoBehaviour
     
     void handle_jump()
     {
-        //if (!is_grounded || !Keyboard.current.spaceKey.wasPressedThisFrame) return;
         if (!is_grounded || !is_jump_requested) return;
 
         is_jump_requested = false;
@@ -292,7 +283,7 @@ public class  Controller7 : MonoBehaviour
         {
             surface_normal = ground_hit.normal;
             fall_vector = Vector3.ProjectOnPlane(vec_down, ground_hit.normal);//.normalized;
-            is_sliding_incline = Vector3.Dot(vec_up, surface_normal) < climb_angle_cos;
+            is_sliding_incline = Vector3.Dot(vec_up, surface_normal) < climb_angle_cos_aka_vertical_dot;
             
             //var d = Mathf.Min(0, ground_hit.distance - (ground_height_check_val));
             var d = ground_hit.distance - (ground_height_check_val);
@@ -651,7 +642,7 @@ public class  Controller7 : MonoBehaviour
 
         var current_move_vec_flat = current_move_vec.flattened_normalized();
         
-        var is_obstacle = move_hit_dot < 0 || move_hit_dot < climb_angle_cos && !step_check4();
+        var is_obstacle = move_hit_dot < 0 || move_hit_dot < climb_angle_cos_aka_vertical_dot && !step_check4();
 
         if (is_obstacle)
         {
@@ -754,9 +745,9 @@ public class  Controller7 : MonoBehaviour
                 
                 var is_hit_lower_than_max_step_height = colliderHeight - collider_radius_x2 - cast_down_hit.distance < maxStepHeight;
 
-                var is_cast_down_hit_slope_smaller_than_max_climbable_angle = Vector3.Dot(vec_up, cast_down_hit.normal) >= climb_angle_cos;
+                var is_cast_down_hit_slope_smaller_than_max_climbable_angle = Vector3.Dot(vec_up, cast_down_hit.normal) >= climb_angle_cos_aka_vertical_dot;
 
-                var cast_down_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle = Vector3.Dot(vec_up, (cast_down_hit.point - hit_move.point).normalized) <= climb_angle_sin;
+                var cast_down_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle = Vector3.Dot(vec_up, (cast_down_hit.point - hit_move.point).normalized) <= climb_angle_sin_aka_horizontal_dot;
                 
                 //if (is_capsule_hit_something && !move_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle) return false;
                 
