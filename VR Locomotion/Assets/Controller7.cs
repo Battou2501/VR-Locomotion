@@ -718,39 +718,52 @@ public class  Controller7 : MonoBehaviour
 
             bool check_step_capsule()
             {
-                var bottom_point = capsule_bottom_point - back_offset + maxStepHeight * vec_up;
-                
+                var bottom_point = capsule_bottom_point + maxStepHeight * vec_up;
+
                 var step_hit_check = Physics.CapsuleCast(
-                    bottom_point,
-                    capsule_top_point + back_offset,
+                    bottom_point - back_offset,
+                    capsule_top_point - back_offset,
                     collider_radius,
                     current_move_vec_flat,
                     out var hit_step,
-                    calculated_step_depth + moveCastBackStepDistance + collider_radius,
-                    raycastMask);
-
-                if (!step_hit_check) return true;
-
-                var hit_vector = (hit_step.point - hit_move.point).normalized;
-                
-                var hit_dot = Vector3.Dot(vec_up, hit_vector);
-
-                if (hit_dot <= climb_angle_sin) return true;
-
-                var cast_down_check = Physics.SphereCast(
-                    capsule_bottom_point + maxStepHeight * vec_up + (collider_radius + minStepDepth) * current_move_vec_flat,
-                    collider_radius,
-                    vec_down,
-                    out var cast_down_hit,
-                    colliderHeight,
+                    //calculated_step_depth + moveCastBackStepDistance,
+                    minStepDepth + moveCastBackStepDistance,
                     raycastMask
                 );
 
-                if (!cast_down_check) return true;
+                var cast_down_check = Physics.SphereCast(
+                    //capsule_top_point + (minStepDepth + collider_radius * (1f - Vector3.Dot(vec_up, hit_move.normal))) * current_move_vec_flat,
+                    capsule_top_point + (minStepDepth) * current_move_vec_flat,
+                    collider_radius,
+                    vec_down,
+                    out var cast_down_hit,
+                    colliderHeight - collider_radius_x2,
+                    raycastMask
+                );
                 
-                var cast_down_hit_dot = Vector3.Dot(vec_up, cast_down_hit.normal);
+                var is_capsule_hit_something = step_hit_check;
+
+                var capsule_hit_distance_is_greater_than_min_step_depth = hit_step.distance-moveCastBackStepDistance > minStepDepth;
                 
-                return cast_down_hit_dot >= climb_angle_cos;
+                //var move_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle = Vector3.Dot(vec_up, (hit_step.point - hit_move.point).normalized) <= climb_angle_sin;
+                
+                var is_cast_down_hit_something = cast_down_check;
+
+                var is_hit_lower_than_max_step_height = colliderHeight - collider_radius_x2 - cast_down_hit.distance < maxStepHeight;
+
+                var is_cast_down_hit_slope_smaller_than_max_climbable_angle = Vector3.Dot(vec_up, cast_down_hit.normal) >= climb_angle_cos;
+
+                var cast_down_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle = Vector3.Dot(vec_up, (cast_down_hit.point - hit_move.point).normalized) <= climb_angle_sin;
+
+                if (is_capsule_hit_something && !capsule_hit_distance_is_greater_than_min_step_depth) return false;
+                
+                //if (is_capsule_hit_something && !move_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle) return false;
+                
+                if (is_cast_down_hit_something && !is_hit_lower_than_max_step_height) return false;
+                
+                if (is_cast_down_hit_something && !is_cast_down_hit_slope_smaller_than_max_climbable_angle && !cast_down_hit_to_capsule_hit_slope_is_smaller_than_max_climbable_angle) return false;
+                
+                return true;
             }
             
             bool check_step_spheres(Vector3 offset)
