@@ -84,12 +84,12 @@ Shader "Unlit/TerrainShader2"
 			fixed _BorderLow; 
 			fixed _BorderHigh;
 
-			half3 TriPlanarBlendWeightsConstantOverlap(const float3 normal) {
+			fixed3 TriPlanarBlendWeightsConstantOverlap(const float3 normal) {
 
-				half3 blend_weights = abs(normal);//normal*normal;//or abs(normal) for linear falloff(and adjust BlendZone)
+				fixed3 blend_weights = abs(normal);//normal*normal;//or abs(normal) for linear falloff(and adjust BlendZone)
 				const float maxBlend = max(blend_weights.x, max(blend_weights.y, blend_weights.z));
  				
-			    const float BlendZone = 0.7f;
+			    const float BlendZone = 0.8f;
 				blend_weights = blend_weights - maxBlend*BlendZone;
 
 				blend_weights = max(blend_weights, 0.0);   
@@ -114,32 +114,22 @@ Shader "Unlit/TerrainShader2"
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
-
-		        half3 blend = TriPlanarBlendWeightsConstantOverlap(i.normal);
 				
-		        //fixed4 level_base_tri_planar = fixed4(0,0,0,0);
+		        fixed3 blend = TriPlanarBlendWeightsConstantOverlap(i.normal);
 				
-		        //if(blend.x > 0.0){
-		            fixed4 level_base_tri_planar = tex2D(_LevelBaseTex, i.pos.yz* _LevelBaseTex_ST.xy)*blend.x;
-		        //}
-		         //if(blend.y > 0.0){
-		            level_base_tri_planar += tex2D(_LevelBaseTex, i.pos.xz* _LevelBaseTex_ST.xy)*blend.y;  
-		        //}
-		         //if(blend.z > 0.0){
-		            level_base_tri_planar += tex2D(_LevelBaseTex, i.pos.xy* _LevelBaseTex_ST.xy)*blend.z;
-		        //}
-
-
+				fixed4 level_base_tri_planar = tex2D(_LevelBaseTex, i.pos.yz* _LevelBaseTex_ST.xy)*blend.x;
+				level_base_tri_planar += tex2D(_LevelBaseTex, i.pos.xz* _LevelBaseTex_ST.xy)*blend.y;
+				level_base_tri_planar += tex2D(_LevelBaseTex, i.pos.xy* _LevelBaseTex_ST.xy)*blend.z;
 				
 				// sample the texture
-				fixed4 biome_map_col  = tex2D(_BiomeMapTex, i.uv * _BiomeMapTex_ST.xy);
-				fixed  noise_col      = tex2D(_NoiseTex, i.uv * _NoiseTex_ST.xy).r;
-				fixed4 biome_1_col    = tex2D(_Biome1Tex, i.uv * _Biome1Tex_ST.xy);
-				fixed4 biome_2_col    = tex2D(_Biome2Tex, i.uv * _Biome2Tex_ST.xy);
-				fixed4 biome_3_col    = tex2D(_Biome3Tex, i.uv * _Biome3Tex_ST.xy);
-				fixed4 biome_4_col    = tex2D(_Biome4Tex, i.uv * _Biome4Tex_ST.xy);
-				fixed4 biome_base_col = tex2D(_BiomeBaseTex, i.uv * _BiomeBaseTex_ST.xy);
-				fixed4 level_base_col = level_base_tri_planar;//tex2D(_LevelBaseTex, i.uv * _LevelBaseTex_ST.xy);
+				const fixed4 biome_map_col  = tex2D(_BiomeMapTex, i.uv * _BiomeMapTex_ST.xy);
+				const fixed  noise_col = tex2D(_NoiseTex, i.uv * _NoiseTex_ST.xy).r;
+				const fixed4 biome_1_col    = tex2D(_Biome1Tex, i.uv * _Biome1Tex_ST.xy);
+				const fixed4 biome_2_col    = tex2D(_Biome2Tex, i.uv * _Biome2Tex_ST.xy);
+				const fixed4 biome_3_col    = tex2D(_Biome3Tex, i.uv * _Biome3Tex_ST.xy);
+				const fixed4 biome_4_col    = tex2D(_Biome4Tex, i.uv * _Biome4Tex_ST.xy);
+				const fixed4 biome_base_col = tex2D(_BiomeBaseTex, i.uv * _BiomeBaseTex_ST.xy);
+				const fixed4 level_base_col = level_base_tri_planar;//tex2D(_LevelBaseTex, i.uv * _LevelBaseTex_ST.xy);
 
 				const fixed border = _BorderThickness;
 				const fixed border_thickness_multiplier = 1.0 / _BorderThickness;
