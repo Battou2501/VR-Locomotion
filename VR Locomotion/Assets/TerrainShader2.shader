@@ -37,7 +37,7 @@
 			{
 				float4 vertex : POSITION;
 				float2 uv : TEXCOORD0;
-				fixed4 color : COLOR;
+				float2 uv1 : TEXCOORD1;
 			};
 
 			struct v2f
@@ -81,7 +81,7 @@
 				v2f o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = v.uv;
-				o.level_mask = v.color.r;
+				o.level_mask = saturate(v.uv1.y);
 				UNITY_TRANSFER_FOG(o,o.vertex);
 				return o;
 			}
@@ -108,17 +108,19 @@
 				fixed noise = 1.0 - noise_col;
 				noise = 1.0 - noise*noise*noise;
 				
-				fixed level_mask = saturate((noise - (1.0 - i.level_mask*(1.0 + border))) * border_thickness_multiplier);
+				fixed level_mask = saturate((i.level_mask-border_low) * border_high_multiplier);
+				//level_mask = 1.0- ((1.0-level_mask)*(1.0-level_mask));
+				level_mask = saturate((noise - (1.0 - level_mask*(1.0 + border))) * border_thickness_multiplier);
 				
-				fixed biome_layer_1_mask = saturate((biome_map_col.r-border_low) * border_high_multiplier);//biome_map_col.r;
-				fixed biome_layer_2_mask = saturate((biome_map_col.g-border_low) * border_high_multiplier);//biome_map_col.g;
-				fixed biome_layer_3_mask = saturate((biome_map_col.b-border_low) * border_high_multiplier);//biome_map_col.b;
-				fixed biome_layer_4_mask = saturate((biome_map_col.a-border_low) * border_high_multiplier);//biome_map_col.a;
+				fixed biome_layer_1_mask = saturate((biome_map_col.r-border_low) * border_high_multiplier);
+				fixed biome_layer_2_mask = saturate((biome_map_col.g-border_low) * border_high_multiplier);
+				fixed biome_layer_3_mask = saturate((biome_map_col.b-border_low) * border_high_multiplier);
+				fixed biome_layer_4_mask = saturate((biome_map_col.a-border_low) * border_high_multiplier);
 
-				biome_layer_1_mask = saturate((noise - (1.0 - biome_layer_1_mask*(1.0 + border))) * border_thickness_multiplier) * level_mask;//biome_map_col.r;
-				biome_layer_2_mask = saturate((noise - (1.0 - biome_layer_2_mask*(1.0 + border))) * border_thickness_multiplier) * level_mask;//biome_map_col.g;
-				biome_layer_3_mask = saturate((noise - (1.0 - biome_layer_3_mask*(1.0 + border))) * border_thickness_multiplier) * level_mask;//biome_map_col.b;
-				biome_layer_4_mask = saturate((noise - (1.0 - biome_layer_4_mask*(1.0 + border))) * border_thickness_multiplier) * level_mask;//biome_map_col.a;
+				biome_layer_1_mask = saturate((noise - (1.0 - biome_layer_1_mask*(1.0 + border))) * border_thickness_multiplier) * level_mask;
+				biome_layer_2_mask = saturate((noise - (1.0 - biome_layer_2_mask*(1.0 + border))) * border_thickness_multiplier) * level_mask;
+				biome_layer_3_mask = saturate((noise - (1.0 - biome_layer_3_mask*(1.0 + border))) * border_thickness_multiplier) * level_mask;
+				biome_layer_4_mask = saturate((noise - (1.0 - biome_layer_4_mask*(1.0 + border))) * border_thickness_multiplier) * level_mask;
 
 
 
@@ -129,6 +131,7 @@
 				col = col * (1.0-biome_layer_2_mask) + biome_2_col * biome_layer_2_mask;
 				col = col * (1.0-biome_layer_3_mask) + biome_3_col * biome_layer_3_mask;
 				col = col * (1.0-biome_layer_4_mask) + biome_4_col * biome_layer_4_mask;
+				
 				// apply fog
 				UNITY_APPLY_FOG(i.fogCoord, col);
 				
