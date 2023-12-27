@@ -38,6 +38,8 @@
 				float4 vertex : POSITION;
 				float2 uv : TEXCOORD0;
 				float2 uv1 : TEXCOORD1;
+				float2 uv2 : TEXCOORD2;
+				float2 uv3 : TEXCOORD3;
 			};
 
 			struct v2f
@@ -46,6 +48,7 @@
 				UNITY_FOG_COORDS(1)
 				float4 vertex : SV_POSITION;
 				fixed level_mask : TEXCOORD1;
+				fixed4 biome_map : TEXCOORD2;
 			};
 
 			sampler2D _BiomeMapTex;
@@ -82,6 +85,7 @@
 				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = v.uv;
 				o.level_mask = saturate(v.uv1.y);
+				o.biome_map = fixed4(v.uv2.x, v.uv2.y, v.uv3.x, v.uv3.y);
 				UNITY_TRANSFER_FOG(o,o.vertex);
 				return o;
 			}
