@@ -89,14 +89,12 @@
 			fixed4 frag (v2f i) : SV_Target
 			{
 				// sample the texture
-				fixed4 biome_map_col = tex2D(_BiomeMapTex, i.uv * _BiomeMapTex_ST.xy);
-
-				fixed noise_col = tex2D(_NoiseTex, i.uv * _NoiseTex_ST.xy).r;
-				
-				fixed4 biome_1_col = tex2D(_Biome1Tex, i.uv * _Biome1Tex_ST.xy);
-				fixed4 biome_2_col = tex2D(_Biome2Tex, i.uv * _Biome2Tex_ST.xy);
-				fixed4 biome_3_col = tex2D(_Biome3Tex, i.uv * _Biome3Tex_ST.xy);
-				fixed4 biome_4_col = tex2D(_Biome4Tex, i.uv * _Biome4Tex_ST.xy);
+				fixed4 biome_map_col  = tex2D(_BiomeMapTex, i.uv * _BiomeMapTex_ST.xy);
+				fixed  noise_col      = tex2D(_NoiseTex, i.uv * _NoiseTex_ST.xy).r;
+				fixed4 biome_1_col    = tex2D(_Biome1Tex, i.uv * _Biome1Tex_ST.xy);
+				fixed4 biome_2_col    = tex2D(_Biome2Tex, i.uv * _Biome2Tex_ST.xy);
+				fixed4 biome_3_col    = tex2D(_Biome3Tex, i.uv * _Biome3Tex_ST.xy);
+				fixed4 biome_4_col    = tex2D(_Biome4Tex, i.uv * _Biome4Tex_ST.xy);
 				fixed4 biome_base_col = tex2D(_BiomeBaseTex, i.uv * _BiomeBaseTex_ST.xy);
 				fixed4 level_base_col = tex2D(_LevelBaseTex, i.uv * _LevelBaseTex_ST.xy);
 
@@ -104,12 +102,10 @@
 				const fixed border_thickness_multiplier = 1.0 / _BorderThickness;
 				const fixed border_low = _BorderLow;
 				const fixed border_high_multiplier = 1.0 / (_BorderHigh - _BorderLow);
-				
-				fixed noise = 1.0 - noise_col;
-				noise = 1.0 - noise*noise*noise;
+				const fixed noise = 1.0- (1.0 - noise_col)*(1.0 - noise_col)*(1.0 - noise_col);
 				
 				fixed level_mask = saturate((i.level_mask-border_low) * border_high_multiplier);
-				//level_mask = 1.0- ((1.0-level_mask)*(1.0-level_mask));
+				//level_mask = 1.0- ((1.0-level_mask)*(1.0-level_mask)); //CONSIDER
 				level_mask = saturate((noise - (1.0 - level_mask*(1.0 + border))) * border_thickness_multiplier);
 				
 				fixed biome_layer_1_mask = saturate((biome_map_col.r-border_low) * border_high_multiplier);
