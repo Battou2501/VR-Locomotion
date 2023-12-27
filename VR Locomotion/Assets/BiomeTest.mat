@@ -21,27 +21,27 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _Biome1Tex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
+        m_Texture: {fileID: 2800000, guid: 5705854aa784e894080ec5c8d3d6445f, type: 3}
+        m_Scale: {x: 15, y: 15}
         m_Offset: {x: 0, y: 0}
     - _Biome2Tex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
+        m_Texture: {fileID: 2800000, guid: 7acf684bd4aae6148bc9ef1ec3b593da, type: 3}
+        m_Scale: {x: 15, y: 15}
         m_Offset: {x: 0, y: 0}
     - _Biome3Tex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
+        m_Texture: {fileID: 2800000, guid: 74c2f9067563b5e48b4d24bc06e9ac09, type: 3}
+        m_Scale: {x: 15, y: 15}
         m_Offset: {x: 0, y: 0}
     - _Biome4Tex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
+        m_Texture: {fileID: 2800000, guid: 0f7e92e739873a645b37f902f3759279, type: 3}
+        m_Scale: {x: 15, y: 15}
         m_Offset: {x: 0, y: 0}
     - _Biome5Tex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BiomeBaseTex:
-        m_Texture: {fileID: 2800000, guid: 7acf684bd4aae6148bc9ef1ec3b593da, type: 3}
+        m_Texture: {fileID: 2800000, guid: f61ca4895bbefe74f8f94f076891792a, type: 3}
         m_Scale: {x: 15, y: 15}
         m_Offset: {x: 0, y: 0}
     - _BiomeMap:
@@ -49,7 +49,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BiomeMapTex:
-        m_Texture: {fileID: 2800000, guid: fafc9bfd9125cb046be60c946f2e7f7b, type: 3}
+        m_Texture: {fileID: 2800000, guid: ec36e2cf5a7ddd74bb6698c9842b8f5a, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
@@ -74,7 +74,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _LevelBaseTex:
         m_Texture: {fileID: 2800000, guid: 6b8e14b4d3b10744ebf179d86254b5c7, type: 3}
-        m_Scale: {x: 5, y: 5}
+        m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 2800000, guid: d5a14cdf16403a34cb30caebf5186450, type: 3}
@@ -98,7 +98,9 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BorderThickness: 0.104
+    - _BorderHigh: 0.713
+    - _BorderLow: 0.107
+    - _BorderThickness: 0.136
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1

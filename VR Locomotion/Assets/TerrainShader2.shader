@@ -1,4 +1,6 @@
-﻿Shader "Unlit/TerrainShader2"
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Unlit/TerrainShader2"
 {
 	Properties
 	{
@@ -40,6 +42,7 @@
 				float2 uv1 : TEXCOORD1;
 				float2 uv2 : TEXCOORD2;
 				float2 uv3 : TEXCOORD3;
+				float3 normal : NORMAL;
 			};
 
 			struct v2f
@@ -49,6 +52,8 @@
 				float4 vertex : SV_POSITION;
 				fixed level_mask : TEXCOORD1;
 				fixed4 biome_map : TEXCOORD2;
+				float3 normal : TEXCOORD3;
+				float3 pos : TEXCOORD4;
 			};
 
 			sampler2D _BiomeMapTex;
@@ -78,6 +83,21 @@
 			fixed _BorderThickness;
 			fixed _BorderLow; 
 			fixed _BorderHigh;
+
+			half3 TriPlanarBlendWeightsConstantOverlap(const float3 normal) {
+
+				half3 blend_weights = abs(normal);//normal*normal;//or abs(normal) for linear falloff(and adjust BlendZone)
+				const float maxBlend = max(blend_weights.x, max(blend_weights.y, blend_weights.z));
+ 				
+			    const float BlendZone = 0.7f;
+				blend_weights = blend_weights - maxBlend*BlendZone;
+
+				blend_weights = max(blend_weights, 0.0);   
+
+				const float rcpBlend = 1.0 / (blend_weights.x + blend_weights.y + blend_weights.z);
+				return blend_weights*rcpBlend;
+			}
+
 			
 			v2f vert (appdata v)
 			{
@@ -86,12 +106,31 @@
 				o.uv = v.uv;
 				o.level_mask = saturate(v.uv1.y);
 				o.biome_map = fixed4(v.uv2.x, v.uv2.y, v.uv3.x, v.uv3.y);
+				o.normal = mul(unity_ObjectToWorld,v.normal);
+				o.pos = mul(unity_ObjectToWorld,v.vertex).xyz-mul(unity_ObjectToWorld,float4(0,0,0,1)).xyz;
 				UNITY_TRANSFER_FOG(o,o.vertex);
 				return o;
 			}
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
+
+		        half3 blend = TriPlanarBlendWeightsConstantOverlap(i.normal);
+				
+		        //fixed4 level_base_tri_planar = fixed4(0,0,0,0);
+				
+		        //if(blend.x > 0.0){
+		            fixed4 level_base_tri_planar = tex2D(_LevelBaseTex, i.pos.yz* _LevelBaseTex_ST.xy)*blend.x;
+		        //}
+		         //if(blend.y > 0.0){
+		            level_base_tri_planar += tex2D(_LevelBaseTex, i.pos.xz* _LevelBaseTex_ST.xy)*blend.y;  
+		        //}
+		         //if(blend.z > 0.0){
+		            level_base_tri_planar += tex2D(_LevelBaseTex, i.pos.xy* _LevelBaseTex_ST.xy)*blend.z;
+		        //}
+
+
+				
 				// sample the texture
 				fixed4 biome_map_col  = tex2D(_BiomeMapTex, i.uv * _BiomeMapTex_ST.xy);
 				fixed  noise_col      = tex2D(_NoiseTex, i.uv * _NoiseTex_ST.xy).r;
@@ -100,7 +139,7 @@
 				fixed4 biome_3_col    = tex2D(_Biome3Tex, i.uv * _Biome3Tex_ST.xy);
 				fixed4 biome_4_col    = tex2D(_Biome4Tex, i.uv * _Biome4Tex_ST.xy);
 				fixed4 biome_base_col = tex2D(_BiomeBaseTex, i.uv * _BiomeBaseTex_ST.xy);
-				fixed4 level_base_col = tex2D(_LevelBaseTex, i.uv * _LevelBaseTex_ST.xy);
+				fixed4 level_base_col = level_base_tri_planar;//tex2D(_LevelBaseTex, i.uv * _LevelBaseTex_ST.xy);
 
 				const fixed border = _BorderThickness;
 				const fixed border_thickness_multiplier = 1.0 / _BorderThickness;
