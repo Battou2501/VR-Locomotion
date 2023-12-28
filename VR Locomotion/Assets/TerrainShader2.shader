@@ -119,7 +119,9 @@ Shader "Unlit/TerrainShader2"
 				o.level_mask = saturate(v.uv2.y);
 				o.biome_map = fixed4(v.uv3.x, v.uv3.y, v.uv4.x, v.uv4.y);
 				o.normal = normalize(mul(unity_ObjectToWorld,v.normal));
+				//o.normal = normalize(v.normal);
 				o.pos = mul(unity_ObjectToWorld,v.vertex).xyz-mul(unity_ObjectToWorld,float4(0,0,0,1)).xyz;
+				//o.pos = v.vertex.xyz;
 				UNITY_TRANSFER_FOG(o,o.vertex);
 				return o;
 			}
@@ -142,6 +144,7 @@ Shader "Unlit/TerrainShader2"
 
 					const fixed4 level_base_col = level_base_tri_planar;
 				#else
+
 					const fixed4 level_base_col = tex2D(_LevelBaseTex, i.uv_base);
 				#endif
 				
