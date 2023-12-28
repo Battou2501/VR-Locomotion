@@ -9,7 +9,9 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: BiomeTest
   m_Shader: {fileID: 4800000, guid: 949806f33e714d279630f75042a3045e, type: 3}
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _MAP_TRI_PLANAR
+  - _USE_BIOME_MAP
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -74,7 +76,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _LevelBaseTex:
         m_Texture: {fileID: 2800000, guid: 6b8e14b4d3b10744ebf179d86254b5c7, type: 3}
-        m_Scale: {x: 1, y: 1}
+        m_Scale: {x: 3, y: 3}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 2800000, guid: d5a14cdf16403a34cb30caebf5186450, type: 3}
@@ -108,6 +110,7 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
+    - _Map: 1
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
@@ -115,7 +118,9 @@ Material:
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
+    - _TriPlanarBorderThickness: 0.3
     - _UVSec: 0
+    - _Use: 0
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
