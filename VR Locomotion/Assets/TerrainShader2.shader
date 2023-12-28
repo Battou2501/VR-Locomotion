@@ -91,12 +91,14 @@ Shader "Unlit/TerrainShader2"
 			fixed _BorderHigh;
 			float _TriPlanarBorderThickness;
 
+			static const fixed BlendZone = 1.0 - _TriPlanarBorderThickness;
+			
 			fixed3 TriPlanarBlendWeightsConstantOverlap(const float3 normal) {
 
 				fixed3 blend_weights = normal*normal;//or abs(normal) for linear falloff(and adjust BlendZone)
 				const fixed maxBlend = max(blend_weights.x, max(blend_weights.y, blend_weights.z));
 				
-			    const fixed BlendZone = 1.0 - _TriPlanarBorderThickness;
+			    //const fixed BlendZone = 1.0 - _TriPlanarBorderThickness;
 				blend_weights = blend_weights - maxBlend*BlendZone;
 				blend_weights = max(blend_weights, 0.0);
 				blend_weights *= blend_weights;
@@ -116,11 +118,15 @@ Shader "Unlit/TerrainShader2"
 				o.uv_base = TRANSFORM_TEX(v.uv1, _LevelBaseTex);
 				o.level_mask = saturate(v.uv2.y);
 				o.biome_map = fixed4(v.uv3.x, v.uv3.y, v.uv4.x, v.uv4.y);
-				o.normal = mul(unity_ObjectToWorld,v.normal);
+				o.normal = normalize(mul(unity_ObjectToWorld,v.normal));
 				o.pos = mul(unity_ObjectToWorld,v.vertex).xyz-mul(unity_ObjectToWorld,float4(0,0,0,1)).xyz;
 				UNITY_TRANSFER_FOG(o,o.vertex);
 				return o;
 			}
+
+			static const fixed border_thickness_multiplier = 1.0 / _BorderThickness;
+			static const fixed border_high_multiplier = 1.0 / (_BorderHigh - _BorderLow);
+			static const fixed one_plus_border_thickness = 1.0 + _BorderThickness;
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
@@ -128,7 +134,7 @@ Shader "Unlit/TerrainShader2"
 				const fixed3  noise_col = tex2D(_NoiseTex, i.uv * _NoiseTex_ST.xy).rgb;
 				
 				#ifdef _MAP_TRI_PLANAR
-			        fixed3 blend = TriPlanarBlendWeightsConstantOverlap(normalize(i.normal));
+			        fixed3 blend = TriPlanarBlendWeightsConstantOverlap(i.normal);
 					
 					fixed4 level_base_tri_planar = tex2D(_LevelBaseTex, i.pos.yz* _LevelBaseTex_ST.xy)*blend.x;
 					level_base_tri_planar += tex2D(_LevelBaseTex, i.pos.xz* _LevelBaseTex_ST.xy)*blend.y;
@@ -160,35 +166,33 @@ Shader "Unlit/TerrainShader2"
 				const fixed4 biome_4_col    = tex2D(_Biome4Tex, i.uv * _Biome4Tex_ST.xy);
 				const fixed4 biome_base_col = tex2D(_BiomeBaseTex, i.uv * _BiomeBaseTex_ST.xy);
 
-				const fixed border = _BorderThickness;
-				const fixed border_thickness_multiplier = 1.0 / _BorderThickness;
-				const fixed border_low = _BorderLow;
-				const fixed border_high_multiplier = 1.0 / (_BorderHigh - _BorderLow);
 				const fixed noise = 1.0- (1.0 - noise_col.r)*(1.0 - noise_col.r)*(1.0 - noise_col.r);
+				const fixed noise2 = 1.0- (1.0 - noise_col.g)*(1.0 - noise_col.g)*(1.0 - noise_col.g);
+				const fixed noise3 = 1.0- (1.0 - noise_col.b)*(1.0 - noise_col.b)*(1.0 - noise_col.b);
 				
-				fixed level_mask = saturate((i.level_mask-border_low) * border_high_multiplier);
+				fixed level_mask = saturate((i.level_mask-_BorderLow) * border_high_multiplier);
 				//level_mask = 1.0- ((1.0-level_mask)*(1.0-level_mask)); //CONSIDER
-				level_mask = saturate((noise - (1.0 - level_mask*(1.0 + border))) * border_thickness_multiplier);
+				level_mask = saturate((noise3 - (1.0 - level_mask * one_plus_border_thickness)) * border_thickness_multiplier);
 				
-				fixed biome_layer_1_mask = saturate((biome_1_coef-border_low) * border_high_multiplier);
-				fixed biome_layer_2_mask = saturate((biome_2_coef-border_low) * border_high_multiplier);
-				fixed biome_layer_3_mask = saturate((biome_3_coef-border_low) * border_high_multiplier);
-				fixed biome_layer_4_mask = saturate((biome_4_coef-border_low) * border_high_multiplier);
+				fixed biome_layer_1_mask = saturate((biome_1_coef-_BorderLow) * border_high_multiplier);
+				fixed biome_layer_2_mask = saturate((biome_2_coef-_BorderLow) * border_high_multiplier);
+				fixed biome_layer_3_mask = saturate((biome_3_coef-_BorderLow) * border_high_multiplier);
+				fixed biome_layer_4_mask = saturate((biome_4_coef-_BorderLow) * border_high_multiplier);
 
-				biome_layer_1_mask = saturate((noise - (1.0 - biome_layer_1_mask*(1.0 + border))) * border_thickness_multiplier) * level_mask;
-				biome_layer_2_mask = saturate((noise - (1.0 - biome_layer_2_mask*(1.0 + border))) * border_thickness_multiplier) * level_mask;
-				biome_layer_3_mask = saturate((noise - (1.0 - biome_layer_3_mask*(1.0 + border))) * border_thickness_multiplier) * level_mask;
-				biome_layer_4_mask = saturate((noise - (1.0 - biome_layer_4_mask*(1.0 + border))) * border_thickness_multiplier) * level_mask;
+				biome_layer_1_mask = saturate((noise - (1.0 - biome_layer_1_mask * one_plus_border_thickness)) * border_thickness_multiplier) * level_mask;
+				biome_layer_2_mask = saturate((noise2 - (1.0 - biome_layer_2_mask * one_plus_border_thickness)) * border_thickness_multiplier) * level_mask;
+				biome_layer_3_mask = saturate((noise3 - (1.0 - biome_layer_3_mask * one_plus_border_thickness)) * border_thickness_multiplier) * level_mask;
+				biome_layer_4_mask = saturate((noise - (1.0 - biome_layer_4_mask * one_plus_border_thickness)) * border_thickness_multiplier) * level_mask;
 
 
 
 				
 				fixed4 col = level_base_col * (1.0-level_mask) + biome_base_col * level_mask;
 
-				col = col * (1.0-biome_layer_1_mask) + biome_1_col * biome_layer_1_mask;
-				col = col * (1.0-biome_layer_2_mask) + biome_2_col * biome_layer_2_mask;
-				col = col * (1.0-biome_layer_3_mask) + biome_3_col * biome_layer_3_mask;
-				col = col * (1.0-biome_layer_4_mask) + biome_4_col * biome_layer_4_mask;
+				col = col * (1.0 - biome_layer_1_mask) + biome_1_col * biome_layer_1_mask;
+				col = col * (1.0 - biome_layer_2_mask) + biome_2_col * biome_layer_2_mask;
+				col = col * (1.0 - biome_layer_3_mask) + biome_3_col * biome_layer_3_mask;
+				col = col * (1.0 - biome_layer_4_mask) + biome_4_col * biome_layer_4_mask;
 				
 				// apply fog
 				UNITY_APPLY_FOG(i.fogCoord, col);
