@@ -586,7 +586,7 @@ public class  Controller7 : MonoBehaviour
             }
 
             var can_move = check_movement(i, current_move_normalized_vec, current_surface_normal, move_dist_left, out var new_move_vec, out var move_dist, out var new_surface_normal, out var will_avoid_obstacle, out var obstacle_dot);
-            
+
             current_position += move_dist * move_dot_mult * current_move_normalized_vec;
 
             update_capsule_points();
@@ -601,6 +601,8 @@ public class  Controller7 : MonoBehaviour
             is_avoiding_obstacle = will_avoid_obstacle;
             
             if(move_dist_left<=Mathf.Epsilon) break;
+            
+            if(move_dot_mult < 0.005f) break;
             
             if(iterations_obstacle > 2 && move_dist <= Mathf.Epsilon) break;
         }
@@ -658,7 +660,7 @@ public class  Controller7 : MonoBehaviour
             new_move_vec = obstacle_move_sign * Vector3.Cross(hit_norm, used_surf_normal).normalized;
             obstacle_dot = Vector3.Dot(new_move_vec, move_vec_flat);
             will_avoid_obstacle = true;
-            move_dist = Mathf.Min(0,hit_dist - moveCastBackStepDistance - stopDistanceBeforeObstacle);
+            move_dist = Mathf.Max(0,hit_dist - moveCastBackStepDistance - stopDistanceBeforeObstacle);
             
             return obstacle_dot > 0;
         }
@@ -675,6 +677,7 @@ public class  Controller7 : MonoBehaviour
         }
 
         move_dist = Mathf.Max(iter_num == 1 ? -100 : 0,hit_dist - moveCastBackStepDistance - stopDistanceBeforeObstacle);
+
         //move_dist = Mathf.Max(0,hit_dist - moveCastBackStepDistance - obstacleSeparationDistance - 0.002f);
 
         
